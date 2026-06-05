@@ -52,51 +52,49 @@ MODULES.ddos = {
       let current, ragAnswer, actionAnswer, notes;
 
       if (attackType === 'productLaunch') {
-        // Tricky: traffic IS high but it's a legitimate product launch — still GREEN for some, AMBER for one
         if (i === 0) {
           const mult = randFloat(2.1, 2.8, 1);
           current = Math.round(baseline * mult);
           ragAnswer = 'A'; actionAnswer = 'throttle';
-          notes = `⚠️ EDGE CASE: Traffic is ${mult}x the normal average. The email says there's a product launch today — so this COULD be real visitors. But ${mult}x is still over the 2x safe limit. AMBER → THROTTLE to be safe while we check if it's real traffic.`;
+          notes = `${mult}× the usual amount — above the warning level, even with today's product launch.`;
         } else {
           current = jitter(baseline, 0.15);
           ragAnswer = 'G'; actionAnswer = 'ignore';
-          notes = `Normal traffic (${Math.round(current).toLocaleString()} vs average ${baseline.toLocaleString()}). Even with a product launch, this service looks completely normal. GREEN = IGNORE.`;
+          notes = `${Math.round(current).toLocaleString()}/min — close to the ${baseline.toLocaleString()}/min average.`;
         }
       } else if (attackType === 'clean') {
         current = jitter(baseline, 0.1);
         ragAnswer = 'G'; actionAnswer = 'ignore';
-        notes = `Traffic (${Math.round(current).toLocaleString()}) is close to the average (${baseline.toLocaleString()}). Nothing to worry about — GREEN = IGNORE.`;
+        notes = `${Math.round(current).toLocaleString()}/min — close to the ${baseline.toLocaleString()}/min average.`;
       } else if (attackType === 'volumetric' && i === 0) {
         const mult = randInt(13, 35);
         current = baseline * mult;
         ragAnswer = 'R'; actionAnswer = 'block';
-        notes = `🔴 Traffic is ${mult}x the normal amount! That's like ${mult * 100} people all trying to get through one door. Over 10x = RED → BLOCK now!`;
+        notes = `${mult}× higher than normal right now.`;
       } else if (attackType === 'stealth' && i < 2) {
-        // Tricky edge case: exactly at the 3x boundary
         const isBoundary = (i === 1);
         const mult = isBoundary ? randFloat(3.0, 3.4, 1) : randFloat(4.5, 8.0, 1);
         current = Math.round(baseline * mult);
         ragAnswer = 'A'; actionAnswer = 'throttle';
         notes = isBoundary
-          ? `⚠️ EDGE CASE: Traffic is ${mult}x average. This is just above the 3x warning threshold. Not a massive spike but suspicious — AMBER → THROTTLE and keep watching.`
-          : `Traffic is ${mult}x the normal amount. That's above the 3x warning level. AMBER → THROTTLE — slow it down and monitor closely.`;
+          ? `${mult}× the usual amount — just above the warning level.`
+          : `${mult}× the usual amount right now.`;
       } else if (attackType === 'multi-vector' && i < 3) {
         if (i === 0) {
           const mult = randInt(11, 22);
           current = baseline * mult;
           ragAnswer = 'R'; actionAnswer = 'block';
-          notes = `🔴 ${mult}x traffic — main attack! Over 10x = RED → BLOCK immediately.`;
+          notes = `${mult}× higher than normal — main spike.`;
         } else {
           const mult = randFloat(3.5, 7.0, 1);
           current = Math.round(baseline * mult);
           ragAnswer = 'A'; actionAnswer = 'throttle';
-          notes = `${mult}x traffic — secondary attack. Over 3x = AMBER → THROTTLE.`;
+          notes = `${mult}× the usual amount.`;
         }
       } else {
         current = jitter(baseline, 0.1);
         ragAnswer = 'G'; actionAnswer = 'ignore';
-        notes = `Normal traffic (${Math.round(current).toLocaleString()} vs average ${baseline.toLocaleString()}). GREEN = IGNORE.`;
+        notes = `${Math.round(current).toLocaleString()}/min — close to the ${baseline.toLocaleString()}/min average.`;
       }
       return {
         name: svc.name, purpose: svc.purpose,
@@ -132,14 +130,15 @@ MODULES.ddos = {
     <p style="margin-top:8px;">Over 10x normal = BLOCK (Red). 3–10x = THROTTLE (Amber). Normal = IGNORE (Green).</p></div>`;
   },
   plenary: {
-    whatHappened: 'Hackers sent thousands and thousands of fake visitors to our website all at the same time. The website got so busy it couldn\'t cope — like 1,000 pizzas arriving at once that nobody ordered! We had to block the fake traffic to let the real visitors back in.',
-    whyActions: 'We blocked services with over 10x normal traffic because that\'s way too high to be real visitors — it must be fake. We slowed down (throttled) services that were a bit high but not huge. We left normal services alone because changing them would cause more problems.',
-    realWorld: 'This is like when a website you love — like a game or streaming site — suddenly goes down and says "service unavailable." That\'s often a DDoS attack! At home, if your WiFi router gets overwhelmed, it can freeze too. Cyber defenders protect websites you use every day.',
+    analogy:      '🍕 Like 1,000 pizzas arriving at once that nobody ordered — the street gets blocked and real people can\'t get through.',
+    whatHappened: 'Hackers sent thousands of fake visitors to flood our website until it broke.',
+    keyMove:      'Over 10× normal = Block. Between 3–10× = Slow it down. Normal = Leave it alone.',
+    realWorld:    'Ever tried to load a game or website and it just... wouldn\'t load? Sometimes that\'s a DDoS!',
     quiz: [
-      { q: 'What is a DDoS attack like?', options: ['A computer getting too hot 🌡️', '1,000 people all trying to use one door at once 🚪', 'Someone stealing a password 🔑'], correct: 1 },
-      { q: 'Traffic is 15x higher than normal. What should you do?', options: ['Ignore it — probably fine ✅', 'Block it — that\'s way too high! 🚫', 'Turn off the computer 💻'], correct: 1 },
+      { q: 'What does a DDoS attack do?', options: ['Steals your password 🔑', 'Floods a website until it breaks 🌊', 'Deletes your files 🗑️'], correct: 1 },
+      { q: 'Traffic is 15× higher than normal. What do you do?', options: ['Leave it — probably fine ✅', 'Block it 🚫', 'Restart the computer 💻'], correct: 1 },
     ]
-  }
+  },
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -192,23 +191,23 @@ MODULES.malware = {
       if (!proc.legitimate) {
         if (proc.edgeCase === 'lookalike') {
           ragAnswer = 'R'; actionAnswer = 'quarantine';
-          notes = `🔴 EDGE CASE: The name looks almost like a real Windows process — but look carefully! It's "svch0st" with a zero (0), not the letter O. Real Windows process is "svchost". This is a sneaky fake hiding in plain sight! → QUARANTINE.`;
+          notes = `Look very carefully at this name 👀`;
         } else if (proc.edgeCase === 'lowCpuBad') {
           ragAnswer = 'R'; actionAnswer = 'quarantine';
-          notes = `🔴 EDGE CASE: The CPU is only ${cpu.toFixed(1)}% — you might think "low CPU = safe." But look at the NAME! "backdoor_srv.exe" is not any real program. Malware sometimes uses low CPU on purpose to avoid being spotted. → QUARANTINE.`;
+          notes = `Not a known Windows program. CPU is low — but the name gives it away.`;
         } else {
           ragAnswer = 'R'; actionAnswer = 'quarantine';
-          notes = `🔴 Not a real program — unknown name + high CPU/memory usage. This is classic malware. → QUARANTINE immediately.`;
+          notes = `Not a known Windows program.`;
         }
       } else if (proc.edgeCase === 'highCpuLegit') {
         ragAnswer = 'G'; actionAnswer = 'ignore';
-        notes = `🟢 EDGE CASE: CPU is ${cpu.toFixed(1)}% which looks high — but this is Windows Update! When your computer updates, it uses a LOT of power. This is completely normal. The name is trustworthy. → IGNORE.`;
+        notes = `Windows Update — uses lots of power when updating. ✓`;
       } else if (cpu > 70 && proc.legitimate) {
         ragAnswer = 'A'; actionAnswer = 'investigate';
-        notes = `🟡 This is a real program but it's using ${cpu.toFixed(1)}% CPU — that's quite high for it. Could be a bug or glitch. → INVESTIGATE to be safe.`;
+        notes = `Real program but CPU is quite high right now (${cpu.toFixed(1)}%).`;
       } else {
         ragAnswer = 'G'; actionAnswer = 'ignore';
-        notes = `🟢 Real, known Windows program running normally. CPU: ${cpu.toFixed(1)}%, Memory: ${mem}MB — all normal. → IGNORE.`;
+        notes = `Known Windows program, running normally.`;
       }
 
       return {
@@ -226,14 +225,15 @@ MODULES.malware = {
     <p style="margin-top:8px;">Remember: high CPU doesn't always mean malware (Windows Update is legit!). Check the NAME first.</p></div>`;
   },
   plenary: {
-    whatHappened: 'Bad software called malware had secretly got onto our computers. Some programs had suspicious names or were using way too much computer power. We used the Process Monitor to spot them, then quarantined them — like putting sick people in a separate room so the illness can\'t spread!',
-    whyActions: 'We quarantined programs with unknown names because a program you don\'t recognise shouldn\'t be on your computer. We left Windows Update alone even though it had high CPU — because it\'s a real, trusted program and high CPU during updates is totally normal. We had to use both clues together: the name AND the CPU.',
-    realWorld: 'Malware can get onto computers at home through dodgy websites, email attachments, or USB sticks. If your computer suddenly goes really slow, or does weird things, it might have malware. Tell a grown-up and use antivirus software to scan for it. Never plug in a USB stick you found — it might have malware on it!',
+    analogy:      '🕵️ Like a spy wearing a school uniform — they look like they belong, but they\'re secretly stealing things.',
+    whatHappened: 'Bad software had sneaked onto a computer, hiding inside programs with suspicious or fake names.',
+    keyMove:      'Unknown name = Quarantine. Real name but very high CPU = Investigate. Known and normal = Leave it.',
+    realWorld:    'If your computer suddenly gets really slow for no reason, it might have something hiding on it — tell a grown-up!',
     quiz: [
-      { q: 'What is a clue that a program might be malware?', options: ['It has a familiar name 👀', 'It has a strange or misspelled name and uses lots of CPU 🔴', 'The computer is fast ⚡'], correct: 1 },
-      { q: 'You see "WinUpdate.exe" using 60% CPU. What do you do?', options: ['Quarantine it immediately! 🚫', 'Ignore it — Windows Update uses lots of CPU normally ✅', 'Report it to the police 👮'], correct: 1 },
+      { q: 'You see "cryptminer.tmp" using 92% CPU. What is it probably doing?', options: ['Running normally ✅', 'Hiding as malware and using your computer\'s power 🔴', 'Just updating Windows 🔄'], correct: 1 },
+      { q: '"WinUpdate.exe" is using 55% CPU. What do you do?', options: ['Quarantine it immediately 🚫', 'Leave it — Windows Update often uses lots of power ✅', 'Turn off the computer 💻'], correct: 1 },
     ]
-  }
+  },
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -373,38 +373,37 @@ MODULES.ransomware = {
 
       if (isNightlyBackup) {
         encryptedFiles = Math.round(totalFiles * randFloat(0.1, 0.3) / 100);
-        newExtensions  = '.bak'; // backup extension — normal!
-        writeOpsMin    = randInt(600, 3500); // high but legitimate
+        newExtensions  = '.bak';
+        writeOpsMin    = randInt(600, 3500);
         ragAnswer      = 'G'; actionAnswer = 'ignore';
-        notes          = `🟢 EDGE CASE: Write activity is high (${writeOpsMin.toLocaleString()}/min) and files have ".bak" extension — but this is the BACKUP DRIVE doing its nightly backup job. This is completely normal. ".bak" means backup, not ransomware! → IGNORE.`;
+        notes          = `Backup drive running its nightly job. ".bak" means backup copy. ✓`;
       } else if (isAttacked && isFront) {
-        // Early-stage — only a few files affected, new suspicious extension
         const isEarlyStage = Math.random() > 0.5;
         if (isEarlyStage) {
           encryptedFiles = Math.round(totalFiles * randFloat(0.5, 4.0) / 100);
           newExtensions  = pick(['.locked','.encrypted','.WNCRY','.zepto']);
           writeOpsMin    = randInt(300, 900);
           ragAnswer      = 'A'; actionAnswer = 'investigate';
-          notes          = `🟡 EDGE CASE: Only ${encryptedFiles.toLocaleString()} files affected so far (${((encryptedFiles/totalFiles)*100).toFixed(1)}%) — but the "${newExtensions}" extension should NEVER appear. This is the early start of ransomware! → INVESTIGATE urgently before it spreads further.`;
+          notes          = `${encryptedFiles.toLocaleString()} files now have a "${newExtensions}" extension — that's not normal.`;
         } else {
           encryptedFiles = Math.round(totalFiles * randFloat(25, 75) / 100);
           newExtensions  = pick(['.locked','.encrypted','.WNCRY','.cerber','.crypted']);
           writeOpsMin    = randInt(2000, 8000);
           ragAnswer      = 'R'; actionAnswer = 'isolate';
-          notes          = `🔴 RANSOMWARE! ${encryptedFiles.toLocaleString()} of ${totalFiles.toLocaleString()} files encrypted (${((encryptedFiles/totalFiles)*100).toFixed(0)}%). New extension: "${newExtensions}". Writing at ${writeOpsMin.toLocaleString()} ops/min. → ISOLATE this drive immediately! Every second = more files lost!`;
+          notes          = `${((encryptedFiles/totalFiles)*100).toFixed(0)}% of files encrypted. Extension: "${newExtensions}".`;
         }
       } else if (isAttacked) {
         encryptedFiles = Math.round(totalFiles * randFloat(0.85, 0.99));
         newExtensions  = pick(['.locked','.encrypted','.WNCRY','.zepto','.cerber','.crypted']);
         writeOpsMin    = randInt(800, 8000);
         ragAnswer      = 'R'; actionAnswer = 'isolate';
-        notes          = `🔴 ${((encryptedFiles/totalFiles)*100).toFixed(0)}% of files are already encrypted with "${newExtensions}" extension. This drive is almost completely locked. → ISOLATE now!`;
+        notes          = `${((encryptedFiles/totalFiles)*100).toFixed(0)}% of files have the "${newExtensions}" extension.`;
       } else {
         encryptedFiles = Math.round(totalFiles * randFloat(0.1, 1.0) / 100);
         newExtensions  = 'None';
         writeOpsMin    = randInt(5, 55);
         ragAnswer      = 'G'; actionAnswer = 'ignore';
-        notes          = `🟢 File activity is normal. Write rate: ${writeOpsMin}/min. No suspicious extensions. → IGNORE.`;
+        notes          = `Normal file activity. No unusual extensions.`;
       }
 
       return {
@@ -421,14 +420,15 @@ MODULES.ransomware = {
     <p>Ransomware locks your files using a secret code. The clues: <strong>suspicious new file extensions</strong> (.locked, .encrypted), <strong>very high write operations</strong>, and <strong>lots of files affected</strong>. Watch out for the backup drive edge case — ".bak" on a backup drive is NORMAL!</p></div>`;
   },
   plenary: {
-    whatHappened: 'Ransomware got onto our network and started locking files by scrambling them — a bit like changing all the letters in a book to random symbols so nobody can read it. The hackers would then demand money to give us the special key to unscramble them. We spotted it and isolated the drives before too much was lost.',
-    whyActions: 'We isolated drives with lots of encrypted files because every second matters — the ransomware keeps spreading as long as it\'s running. We only investigated drives with a small number of encrypted files because catching it early means we might stop it before it gets bad. The backup drive with ".bak" files was a tricky one — that\'s a normal backup job, not ransomware!',
-    realWorld: 'Ransomware can lock your family\'s holiday photos or your school work forever if they can\'t afford to pay. That\'s why backing up files is so important — if you have a copy, the hackers can\'t win! If a computer suddenly shows locked file icons or strange file extensions, tell an adult immediately and disconnect it from the internet.',
+    analogy:      '🔒 Like someone putting a padlock on your bedroom and saying "pay up if you want your stuff back!"',
+    whatHappened: 'Ransomware scrambled files on our drives so nobody could open them, hoping we\'d pay money for the key.',
+    keyMove:      'Suspicious extension + lots of files = Isolate the drive fast. Just a few files affected = Investigate. Normal backup activity (.bak) = Leave it.',
+    realWorld:    'Ransomware has locked schools, hospitals, and businesses. Backing up your files means the hackers can\'t win!',
     quiz: [
-      { q: 'You see a drive with files renamed to ".locked". What does that mean?', options: ['The files are being backed up safely 💾', 'Ransomware is locking the files! 🔴', 'The drive is full 📦'], correct: 1 },
-      { q: 'The Backup Drive has high write activity and ".bak" files. What do you do?', options: ['Isolate it immediately! 🚫', 'Ignore it — ".bak" means backup, that\'s normal ✅', 'Delete all the .bak files 🗑️'], correct: 1 },
+      { q: 'Files on a drive now end in ".locked". What does that mean?', options: ['They\'ve been backed up safely 💾', 'They\'ve been encrypted by ransomware 🔴', 'The drive is full 📦'], correct: 1 },
+      { q: 'The backup drive has lots of ".bak" files. What do you do?', options: ['Isolate it immediately! 🚫', 'Leave it — ".bak" is just a backup file ✅', 'Delete all the .bak files 🗑️'], correct: 1 },
     ]
-  }
+  },
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -954,11 +954,11 @@ MODULES.phishingModule = {
       purpose:      e.subject,
       body:         e.body,
       domain:       e.from.split('@')[1] || e.from,
-      clue:         e.clue || 'Real company email — all looks correct',
+      clue:         e.clue || 'Real company email',
       isPhish:      e.phishing,
       ragAnswer:    e.phishing ? 'R' : 'G',
       actionAnswer: e.phishing ? 'report' : 'ignore',
-      notes:        e.phishing ? `⚠️ FAKE EMAIL: ${e.clue}` : '✓ Real email — safe to let through',
+      notes:        e.phishing ? `Check this address very carefully 👀` : `Address looks correct ✓`,
       handled:false, userRag:null, userAction:null,
     }));
   },
@@ -970,14 +970,15 @@ MODULES.phishingModule = {
     </div>`;
   },
   plenary: {
-    whatHappened: 'Fake emails called "phishing" emails had arrived in our inbox. They looked very real but had tiny mistakes in the email address — like a zero instead of the letter O, or an extra word added to the domain. Hackers send these hoping someone will click a link and give away their password!',
-    whyActions: 'We reported emails with dodgy addresses because even one wrong character means it\'s NOT from the real company. We left the real ones alone because they had exactly the right address. The trickiest ones are where the fake address looks really similar — like company.com.phishkit.ru which starts with the real address!',
-    realWorld: 'You might get phishing emails at home pretending to be from YouTube, Roblox, or Fortnite saying "your account has been hacked!" Before you click ANYTHING, look super carefully at the email address. Ask a parent or teacher if you\'re not sure. Real companies almost never ask for your password by email!',
+    analogy:      '🎣 Like a fishing hook with fake bait — the email looks real, but it\'s trying to hook you into giving away your password.',
+    whatHappened: 'Fake emails had tiny mistakes in their addresses — a zero instead of an O, an extra word, one wrong letter — designed to trick people into clicking.',
+    keyMove:      'Check every character in the address. One wrong letter = fake. If it feels urgent and scary — that\'s on purpose to make you panic and not think.',
+    realWorld:    'You might get fake emails pretending to be Roblox, YouTube or your school. Always read the address carefully before clicking anything!',
     quiz: [
-      { q: 'Which email address is fake?', options: ['hr@company.com ✅', 'security@paypa1.com — number 1 instead of letter L 🔴', 'it@company.com ✅'], correct: 1 },
-      { q: 'An email says "Act NOW or your account will be DELETED!" What should you do?', options: ['Click the link immediately 😱', 'Check the sender address very carefully — this sounds like a phishing trick! 🔍', 'Delete your account yourself 🗑️'], correct: 1 },
+      { q: 'Which email address is fake?', options: ['hr@company.com', 'security@paypa1.com', 'it@company.com'], correct: 1 },
+      { q: 'An email says "ACT NOW or your account is DELETED!" What\'s going on?', options: ['It\'s a real emergency — click fast! 😱', 'It\'s probably a phishing trick — check the address first 🔍', 'Reply to ask if it\'s real ✉️'], correct: 1 },
     ]
-  }
+  },
 };
 
 // ── MODULE LIST: 4 core modules only ───────────────────────────

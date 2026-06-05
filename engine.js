@@ -323,17 +323,17 @@ function doEmail(id,action,evt){
     if(action==='open'){
       loseH('Opened a fake email!');addXP(-20);
       const e=pick(PHISHING_EXCEPTION_CHAT.onOpened);gcMsg(e.persona,pick(e.msgs));
-      toast('⚠ That was a fake email! Always REPORT ones that look dodgy!','bad');
+      toast('⚠ That was a fake email! Always check the address first!','bad');
       const v=document.getElementById('emailView');v.style.display='block';
       v.innerHTML=`<div class="evmeta"><div class="evlbl">RESULT</div><div class="evval cR">❌ That was a fake email!</div></div>
-        <div class="evbody">In real life, clicking it could put bad software on your computer or steal passwords.\n\nSpot the tricks:\n• Weird spelling: go0gle.com (zero, not letter O)\n• Strange address: company.helpdesk.xyz\n• Scary urgent language — "ACT NOW OR ELSE!"\n\nIf it looks weird — REPORT it, don't open it!</div>`;
+        <div class="evbody">In real life, clicking it could put malware on your computer or steal your password.\n\nSpot the tricks: weird spellings (go0gle.com), scary urgent language, links to strange websites.\n\nIf it looks weird — REPORT it, don't open it!</div>`;
     } else {
       addXP(30);
       const e=pick(PHISHING_EXCEPTION_CHAT.onReported);gcMsg(e.persona,pick(e.msgs));
       toast('✓ Great spotting — fake email reported!','ok');
       const v=document.getElementById('emailView');v.style.display='block';
-      v.innerHTML=`<div class="evmeta"><div class="evlbl">RESULT</div><div class="evval cG">✓ Fake email spotted and reported!</div></div>
-        <div class="evbody">Amazing! You spotted the fake and reported it instead of clicking it.\n\nFake emails often have:\n• Misspelled addresses (go0gle.com, paypa1.com)\n• Scary or urgent messages — "Your account will be deleted!"\n• Links that go to the wrong website\n\nAlways check before you click!</div>`;
+      v.innerHTML=`<div class="evmeta"><div class="evlbl">RESULT</div><div class="evval cG">✓ Fake email caught! 🎯</div></div>
+        <div class="evbody">You spotted the fake address and reported it — exactly right!\n\nFake emails use tricks like:\n• Letters swapped for numbers (paypa1.com)\n• Wrong domain (company.helpdesk.xyz)\n• Scary urgent language to make you panic\n\nAlways check before you click!</div>`;
     }
     GS.active=false;setSim('STANDBY');setStep(0);
     schedAutoAdvance(12000);
@@ -371,23 +371,31 @@ function loadTool(){
 }
 
 
-// ── RENDER TABLE (card layout — all info visible) ──────────────
+// ── LEGENDS — quick reference above data cards ─────────────────
+const MODULE_LEGENDS = {
+  ddos:           '🔴 Over 10× normal → Block   🟡 3–10× normal → Slow it down   🟢 Normal → Leave it',
+  malware:        '🔴 Unknown program → Quarantine   🟡 Real but acting odd → Investigate   🟢 Known & normal → Leave it',
+  ransomware:     '🔴 Bad extension + lots encrypted → Isolate   🟡 Suspicious extension, few files → Investigate   🟢 Normal → Leave it',
+  phishingModule: '🔴 Fake address → Report   🟢 Real address → Deliver it',
+};
+
+// ── RENDER TABLE (card layout) ─────────────────────────────────
 function renderToolData(){
   const id=GS.modId,sc=GS.scenario,cols=MODULE_COLUMNS[id];
-  let html='';
+  // Legend strip at top
+  const legend=MODULE_LEGENDS[id]||'';
+  let html=legend?`<div class="legend-strip">${esc(legend)}</div>`:'';
   sc.forEach((item,i)=>{
     const done=item.handled;
     const borderCol=done?(item.ragAnswer==='R'?'var(--red)':item.ragAnswer==='A'?'var(--amb)':'var(--g)'):'rgba(0,255,65,0.18)';
     html+=`<div class="dcard${done?' done':''}" id="dr${i}" style="border-left:4px solid ${borderCol}" onclick="cardClicked(${i})">`;
-    // Row 1: name + status badge
     html+=`<div class="dcard-head">`;
     html+=`<span class="dcard-name">${esc(item.name)}</span>`;
-    if(done){const ok=item.userAction===item.actionAnswer;html+=`<span class="sbadge ${ok?'sbok':'sberr'}">${ok?'✓ OK':'✗ ERR'}</span>`;}
+    if(done){const ok=item.userAction===item.actionAnswer;html+=`<span class="sbadge ${ok?'sbok':'sberr'}">${ok?'✓':'✗'}</span>`;}
     else{html+=`<span class="sbadge sbpend">ASSESS</span>`;}
     html+=`</div>`;
-    // Row 2: all data values as labelled pills
     html+=`<div class="dcard-vals">`;
-    cols.slice(1).forEach(c=>{  // skip 'name' col since it's in the header
+    cols.slice(1).forEach(c=>{
       let v=item[c.key];if(v===null||v===undefined)v='—';if(typeof v==='number')v=v.toLocaleString();
       let valStyle='';
       if(c.key==='cvssScore'){valStyle=`color:${v>=9?'var(--red)':v>=7?'var(--amb)':v>=4?'#eeee00':'var(--g)'};font-weight:bold`;}
@@ -395,19 +403,18 @@ function renderToolData(){
       html+=`<div class="dval"><span class="dval-lbl">${c.label}</span><span class="dval-v" style="${valStyle}">${esc(String(v))}</span></div>`;
     });
     html+=`</div>`;
-    // Row 3: notes (always visible)
     if(item.notes){html+=`<div class="dcard-note">${esc(item.notes)}</div>`;}
-    // Row 4: action buttons (only if not handled)
     if(!done&&GS.scenarioRagDone){
       html+=`<div class="dcard-actions">`;
       (MODULE_ACTIONS[id]||[]).forEach(a=>{
-        const cls=a.id==='block'||a.id==='quarantine'||a.id==='isolate'||a.id==='lockAccount'||a.id==='revokeBlock'||a.id==='patchNow'||a.id==='report'?'btn-r':
-                  a.id==='ignore'||a.id==='schedulePatch'?'btn-d':'btn-a';
+        const cls=a.id==='block'||a.id==='quarantine'||a.id==='isolate'||a.id==='lockAccount'||a.id==='report'?'btn-r':
+                  a.id==='ignore'?'btn-d':'btn-a';
         html+=`<button class="btn btn-sm ${cls}" onclick="doAction(${i},'${a.id}')">${a.label}</button>`;
       });
       html+=`</div>`;
     } else if(done){
-      html+=`<div class="dcard-done-info">Your action: <strong>${item.userAction}</strong> ${item.userAction===item.actionAnswer?'✓':'✗ (correct was: '+item.actionAnswer+')'}</div>`;
+      const ok=item.userAction===item.actionAnswer;
+      html+=`<div class="dcard-done-info">${ok?'✓ '+item.userAction:'✗ You said: '+item.userAction+' | Correct: '+item.actionAnswer}</div>`;
     }
     html+=`</div>`;
   });
@@ -474,20 +481,21 @@ function doReport(chosen,correct){
 // ── RESULTS ───────────────────────────────────────────────────
 function showResults(repOk,correctTeam){
   const mod=MODULES[GS.modId],sc=GS.scenario;
-  const ragL={'R':'🔴 RED','A':'🟡 AMBER','G':'🟢 GREEN'};
-  let h=`<div class="rtit">${esc(mod.name)}</div><div class="rmod">ROUND ${GS.round} COMPLETE</div>`;
-  // Per-item results
+  let h=`<div class="rtit">${esc(mod.name)}</div><div class="rmod" style="font-size:13px;color:var(--cyn);margin-bottom:12px;">MISSION ${GS.round} COMPLETE</div>`;
   sc.forEach(item=>{
     const ao=(item.userAction===item.actionAnswer);
+    // For phishing: reveal the clue now that the round is over
+    const extra=(GS.modId==='phishingModule'&&item.clue&&item.isPhish)?`<div class="rnote" style="color:var(--amb);">👀 The clue: ${esc(item.clue)}</div>`:'';
     h+=`<div class="rc ${ao?'ok':'bad'}"><h3>${ao?'✓':'✗'} ${esc(item.name)}</h3>
-      <div class="rr"><span>Correct action:</span><code>${item.actionAnswer}</code></div>
-      <div class="rr"><span>Your action:</span><code>${item.userAction||'?'}</code></div>
+      ${extra}
+      <div class="rr"><span>Correct:</span><code>${item.actionAnswer}</code></div>
+      <div class="rr"><span>You said:</span><code>${item.userAction||'?'}</code></div>
       <div class="rnote">${esc(item.notes||'')}</div></div>`;
   });
   h+=mod.completionText('x',sc);
-  h+=`<div class="rc ${repOk?'ok':'bad'}" style="margin-top:8px;"><h3>${repOk?'✓':'✗'} Report ${repOk?'filed correctly':'to wrong team'}</h3><p>Correct team: <strong>${esc(correctTeam)}</strong></p></div>`;
+  h+=`<div class="rc ${repOk?'ok':'bad'}" style="margin-top:8px;"><h3>${repOk?'✓':'✗'} Report ${repOk?'sent to right team':'went to wrong team'}</h3><p>Correct team: <strong>${esc(correctTeam)}</strong></p></div>`;
   document.getElementById('resultsView').innerHTML=h;showTab('R');
-  if(GS.round>=GS.totalRounds)setTimeout(showEndgame,4500);
+  if(GS.round>=GS.totalRounds)setTimeout(showEndgame,7000);
 }
 
 // ── DDOS GRAPH ────────────────────────────────────────────────
@@ -955,23 +963,29 @@ function gcMsg(pId,msg,delay=0){
   },delay);
 }
 
-// ── 4-PART STRUCTURED MODULE LOAD CHAT (one message every ~5 sec) ──
+// ── 2-PART MODULE LOAD CHAT (slow — one message, then one 4s later) ──
 function gcModLoad(modId){
   const chat=MODULE_GROUP_CHAT[modId];if(!chat)return;
-  const keys=['onLoad_ask','onLoad_start','onLoad_attack','onLoad_analogy'];
-  let delay=600;
-  keys.forEach(key=>{
-    if(!chat[key])return;
-    const e=pick(chat[key]);
-    if(e&&e.msgs){gcMsg(e.persona,pick(e.msgs),delay);delay+=5200;}
-  });
+  // Message 1: heads up (immediate)
+  const e1=pick(chat.onLoad_1||[]);if(e1)gcMsg(e1.persona,pick(e1.msgs),500);
+  // Message 2: where to start (4 seconds later)
+  const e2=pick(chat.onLoad_2||[]);if(e2)gcMsg(e2.persona,pick(e2.msgs),5000);
 }
 
-// For correct/wrong/complete events — 1-2 messages max, well spaced
+// ── gcMod: module-specific first, falls back to GLOBAL_CHAT pool ──
 function gcMod(modId,key,delay=400){
-  const chat=MODULE_GROUP_CHAT[modId];if(!chat||!chat[key])return;
-  const entries=shuffle([...chat[key]]).slice(0,1); // only 1 message per event
-  entries.forEach((e,i)=>gcMsg(e.persona,pick(e.msgs),delay+i*4000));
+  const chat=MODULE_GROUP_CHAT[modId];
+  // Try module-specific key first
+  if(chat&&chat[key]){
+    const e=pick(chat[key]);
+    if(e)gcMsg(e.persona,pick(e.msgs),delay);
+    return;
+  }
+  // Fall back to global pool
+  const pool=GLOBAL_CHAT[key];
+  if(!pool)return;
+  const e=pick(pool);
+  if(e)gcMsg(e.persona,pick(e.msgs),delay);
 }
 
 // ── SC BRIDGE REMOVED — stubs in setStep section ───────────────
@@ -980,16 +994,21 @@ function gcMod(modId,key,delay=400){
 function showPlenary(modId){
   const mod=MODULES[modId];if(!mod||!mod.plenary)return schedAutoAdvance(20000);
   const pl=mod.plenary;
-  document.getElementById('plenTitle').textContent='🔍 WHAT JUST HAPPENED?';
-  let html='';
-  if(pl.whatHappened){html+=`<div class="plen-section"><h3>⚡ WHAT WAS THE ATTACK?</h3><p>${pl.whatHappened}</p></div>`;}
-  if(pl.whyActions){html+=`<div class="plen-section"><h3>🤔 WHY DID WE DO THOSE THINGS?</h3><p>${pl.whyActions}</p></div>`;}
-  if(pl.realWorld){html+=`<div class="plen-section"><h3>🏠 HOW DOES THIS CONNECT TO YOUR LIFE?</h3><p>${pl.realWorld}</p></div>`;}
+  const mod_name=mod.name||'THAT ATTACK';
+  const narrators=['Marcus broke it down:','Priya\'s take:','Zara\'s debrief:','Your team\'s verdict:'];
+  document.getElementById('plenTitle').textContent='🔍 '+mod_name+' — DEBRIEF';
+  let html=`<div style="font-size:13px;color:rgba(0,255,65,.5);margin-bottom:16px;">${pick(narrators)}</div>`;
+  // Analogy — big and fun, first
+  if(pl.analogy){html+=`<div class="plen-section"><div style="font-size:22px;margin-bottom:8px;">${pl.analogy}</div></div>`;}
+  // 3 short punchy sections
+  if(pl.whatHappened){html+=`<div class="plen-section"><h3>⚡ WHAT HAPPENED</h3><p>${pl.whatHappened}</p></div>`;}
+  if(pl.keyMove){html+=`<div class="plen-section"><h3>🎯 THE KEY RULE</h3><p>${pl.keyMove}</p></div>`;}
+  if(pl.realWorld){html+=`<div class="plen-section"><h3>🏠 YOUR WORLD</h3><p>${pl.realWorld}</p></div>`;}
   document.getElementById('plenContent').innerHTML=html;
-  // Build quiz
+  // Quiz
   let qHtml='';
   if(pl.quiz&&pl.quiz.length){
-    qHtml='<h3>🧠 QUICK QUIZ!</h3>';
+    qHtml='<h3>🧠 QUICK QUIZ</h3>';
     GS.plenQuizAnswered=0;GS.plenQuizTotal=pl.quiz.length;
     pl.quiz.forEach((q,qi)=>{
       qHtml+=`<div class="pq" id="pq${qi}"><div class="pq-q">${q.q}</div><div class="pq-opts">`;

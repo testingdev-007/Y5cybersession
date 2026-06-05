@@ -1,212 +1,183 @@
 // ============================================================
-// CHAT-DATA.JS — CyberShield Academy v7
-// Age 9 — simple words, fun tone, 4-part structured module load
+// CHAT-DATA.JS — CyberShield Academy v8
+// Short. Varied. Age 9. Colleagues watching you work.
 // ============================================================
 
 const PERSONAS = {
-  zara:   { id:'zara',   name:'Zara K.',   role:'Lead Detective' },
-  marcus: { id:'marcus', name:'Marcus T.',  role:'Network Watcher' },
-  priya:  { id:'priya',  name:'Priya S.',   role:'Threat Spotter' },
+  zara:   { id:'zara',   name:'Zara K.' },
+  marcus: { id:'marcus', name:'Marcus T.' },
+  priya:  { id:'priya',  name:'Priya S.' },
 };
 
 // ── GENERAL ───────────────────────────────────────────────────
 const GENERAL_GROUP_CHAT = {
   welcome: [
-    { persona:'zara',   msgs:["Hi! Welcome to CyberShield! We stop cyber attacks together. Click the green button above to get your first mission!","Hey there! I'm Zara. I'm going to help you stop the hackers! Hit the green button when you're ready.","Welcome! You're now a cyber detective. Click the big green button above to start!"] },
-    { persona:'marcus', msgs:["Yooo! New detective on the team! Let's gooo 🚀","Hey! I'm Marcus. I look after the network. Ready to catch some hackers?","Woooo! Great timing — things have been quiet. (It never stays that way!) 😄"] },
-    { persona:'priya',  msgs:["Welcome. I'm watching for threats. Click the button and let's get started.","Hi! I spot the dodgy stuff. You make the calls. Let's go!","Hi! Glad you're here. Hit the button when you're ready!"] },
+    { persona:'zara', msgs:[
+      "Hey! Ready to catch some hackers? 🕵️",
+      "Welcome! Hit the green button when you're set.",
+      "Good to have you! Click the button above to start.",
+      "Hi! We'll be right here watching. Hit the button!",
+      "Hey there! The inbox is waiting for you 👆",
+    ]},
+    { persona:'marcus', msgs:[
+      "Yooo! New agent! Let's gooo 🚀",
+      "YES! Another detective on the team!",
+      "Hype. Ready? Hit that button! 💪",
+      "Let's see what chaos is waiting for us 😄",
+      "LETS GO! Click the green button! 🔥",
+    ]},
+    { persona:'priya', msgs:[
+      "Hi. We're watching how you do. No pressure. 🙂",
+      "Systems ready. Hit the button when you are.",
+      "Let's see what you've got.",
+      "We set this up to test you. Should be fun.",
+    ]},
   ],
   idle: [
-    { persona:'marcus', msgs:["All quiet for now... probably! 😅","Network looks fine. Enjoy it while it lasts!","Did you know the first computer bug was an actual real moth in 1947?! 🦗","All green on my screen. Nice and calm!"] },
-    { persona:'zara',   msgs:["Take your time — no rush!","Always here if you need help!","In this job, being careful is more important than being fast."] },
-    { persona:'priya',  msgs:["No threats right now. Stay sharp!","Quiet for now. Use the time to think about what you've learned.","Hackers love when people relax and stop paying attention..."] },
+    { persona:'marcus', msgs:[
+      "All quiet... for now 👀",
+      "Did you know the first computer bug was a real moth? 🦗",
+      "Network's calm. Enjoy it!",
+      "Priya just made coffee. Jealous. ☕",
+      "Nothing yet. Hackers must be having a snack.",
+      "Fun fact: some DDoS attacks use millions of computers at once!",
+      "Quiet spell. Use it to think. 🧠",
+      "Still here if you need us!",
+    ]},
+    { persona:'zara', msgs:[
+      "No rush — take your time.",
+      "Always here if you've got questions!",
+      "Quiet is good in this job.",
+      "Being thorough beats being fast. Always.",
+      "How are you finding it so far?",
+    ]},
+    { persona:'priya', msgs:[
+      "Low threat right now. Stay sharp anyway.",
+      "Hackers love when people get comfortable.",
+      "Quiet period. Good time to think.",
+      "I'm running background scans. Nothing flagged.",
+    ]},
   ],
 };
 
-// ── MODULE CHAT ────────────────────────────────────────────────
-// Each module has 4 parts fired in order, 5 seconds apart:
-//   onLoad_ask    — what's the mission
-//   onLoad_start  — where to start (explicit instruction)
-//   onLoad_attack — what this cyber attack actually is
-//   onLoad_analogy — real-world analogy for a 9-year-old
+// ── GLOBAL EVENT POOLS (all modules) ─────────────────────────
+// These are used for any event that doesn't need module-specific context.
+// Big pools = less repetition.
+
+const GLOBAL_CHAT = {
+
+  toolCorrect: [
+    {persona:'marcus', msgs:["That's it! ✅","Right tool! Let's go 🎯","Locked in!","That's the one! 🙌","Yes! 💪","Nailed it!","Bingo!"]},
+    {persona:'zara',   msgs:["Perfect. 👌","Exactly right.","Good call.","Spot on. ✨","That's what I'd pick.","Sharp!"]},
+    {persona:'priya',  msgs:["Confirmed. ✓","Correct. Go.","Right tool.","Good.","That works."]},
+  ],
+
+  toolWrong: [
+    {persona:'zara',   msgs:["Hmm — re-read the email. The attack type is your clue 🔍","Not quite! What does the email say is happening?","Check the email — which tool matches that kind of problem?"]},
+    {persona:'marcus', msgs:["Not that one! Your email's the clue 😄","Wrong tool! What type of attack is it? Go back and check!","Sneak peek: the answer's in your email!"]},
+    {persona:'priya',  msgs:["Wrong one. Read the email again — what's the threat?","The email tells you what to look for. Which tool does that?","Check the email. Attack type → right tool."]},
+  ],
+
+  actionCorrect: [
+    {persona:'marcus', msgs:["Yes! 🎯","Called it! 💪","Boom! ✅","Nailed it!","Clean! ✨","Exactly!","👏","Solid!","Sharp!","Easy for you! 😄","That one was sneaky — well done!","Knew you'd get that!","💯","Beautiful!","Love it!"]},
+    {persona:'zara',   msgs:["Spot on. 👌","Smart move.","That's the one.","Good instinct!","Correct. ✓","Perfect.","Really confident call — nice!","Good thinking.","Well spotted!","Exactly what I'd do.","That takes sharp eyes.","Nice."]},
+    {persona:'priya',  msgs:["Correct. ✔","Right call.","That checks out.","Yep. ✓","Exactly.","Good.","That's it."]},
+  ],
+
+  actionWrong: [
+    {persona:'zara',   msgs:["Hmm — look at the data again. What does it actually tell you?","Think about it — is this a lot, a little, or normal?","Look more carefully. What's actually going on there?"]},
+    {persona:'marcus', msgs:["Ooh — look again! Is this really bad, a bit odd, or totally fine?","Check the numbers — does that seem normal to you?","Not quite! Take another look at what the data shows 🔍"]},
+    {persona:'priya',  msgs:["Wrong action. Look at the data again — what does it mean?","Think about the scale. A tiny bit odd, or really concerning?","Re-read that card. What's the key piece of data telling you?"]},
+  ],
+
+  allHandled: [
+    {persona:'marcus', msgs:["All done! Last step — who gets the report? 📋","Boom — all handled! Now pick the right team 👇","Finished! One more move...","Nearly there! Who do we tell?"]},
+    {persona:'zara',   msgs:["Good work! Now — who should this report go to?","All assessed! Pick the right team.","Last step — which team handles this type of thing?","Almost done. Think about who to report to."]},
+  ],
+
+  reportCorrect: [
+    {persona:'zara',   msgs:["Perfect team choice! 🏆","Yes — they're on it!","Exactly right!","Right people, right time!"]},
+    {persona:'marcus', msgs:["YESSS! Right team! 🦸","Hero! That's the one! 💪","Couldn't pick better! 🎯","They've got it from here! Let's go!"]},
+    {persona:'priya',  msgs:["Correct. They'll handle it. ✓","Right team. Well done.","Good call."]},
+  ],
+
+  reportWrong: [
+    {persona:'zara',   msgs:["Wrong team — who actually deals with THIS type of problem?","Hmm. Think about what kind of incident this is. Which team owns that?"]},
+    {persona:'priya',  msgs:["That team wouldn't handle this. What's the job? Who does that job?","Wrong team. Think: what kind of attack is it, who responds to that?"]},
+    {persona:'marcus', msgs:["Nope! Think about what team actually handles this stuff 😬","Not them! Which team owns this type of problem?"]},
+  ],
+
+  scenarioComplete: [
+    {persona:'marcus', msgs:["MISSION COMPLETE! 🎉","Done and dusted! 🌟","Another one down! 💪","CRUSHED IT! 🏆","Agent-level work right there!","You're getting dangerous at this 😄","That was class! 🔥"]},
+    {persona:'zara',   msgs:["Great work! 🌟","Really solid.","Nicely handled.","You did well there.","Impressive work!","That was great!"]},
+    {persona:'priya',  msgs:["Clean work. ✓","Well done.","Handled properly.","Mission complete. ✓","Solid."]},
+  ],
+
+};
+
+// ── MODULE-SPECIFIC CHAT ───────────────────────────────────────
+// Only needs: onLoad_1 (heads up), onLoad_2 (start here),
+// onActionWrong (contextual hint for this module's data)
 
 const MODULE_GROUP_CHAT = {
 
-  // ── DDoS ──────────────────────────────────────────────────────
   ddos: {
-    onLoad_ask:[
-      {persona:'marcus', msgs:["🚨 Alert! Our website is getting slammed with traffic. Something doesn't feel right — we need to check if it's an attack!","Big problem! Our network is getting flooded. Can you investigate?"]},
+    onLoad_1:[
+      {persona:'marcus', msgs:["Our website's getting slammed with traffic 📈 Could be an attack!","Traffic alert! Something's flooding the network.","Huge spike in visitors — way more than normal. Weird.","Network's going crazy right now. Check it out!"]},
+      {persona:'zara',   msgs:["Heads up — we're seeing unusual traffic. Could be nothing, could be a DDoS.","Traffic's way up. Might be an attack, might be legit. Needs checking."]},
     ],
-    onLoad_start:[
-      {persona:'zara', msgs:["First — click your email on the left and read it. Then pick the Network Traffic Monitor tool and click LOAD TOOL. 👆","Step one: open your email. Step two: load the Network Traffic Monitor. Let's go!"]},
-    ],
-    onLoad_attack:[
-      {persona:'priya', msgs:["A DDoS attack is when hackers send thousands and thousands of fake visitors to a website all at once. The website gets so busy it breaks and nobody can use it.","DDoS stands for Distributed Denial of Service. Hackers use loads of other computers to flood our website with requests until it crashes."]},
-    ],
-    onLoad_analogy:[
-      {persona:'marcus', msgs:["Imagine 1,000 pizzas all arriving at your house at the same time — and you didn't order any of them! The delivery drivers block your road and nobody can get in. That's a DDoS! 🍕🍕🍕","Think of it like everyone in your school trying to squeeze through one door at exactly the same time. The door can't cope and gets jammed!"]},
-    ],
-    onToolCorrect:[
-      {persona:'zara',   msgs:["Network Traffic Monitor — spot on! Now check each service. Is the traffic normal or way too high?"]},
-      {persona:'marcus', msgs:["Yes! Right tool! Now let's look at the numbers. Way more than normal = suspicious!"]},
-    ],
-    onToolWrong:[
-      {persona:'zara',   msgs:["Not quite! We need to see the traffic numbers. Which tool monitors traffic?"]},
-      {persona:'marcus', msgs:["Oops! Think about what we need to look at — how busy is the network? Which tool shows that?"]},
-    ],
-    onActionCorrect:[
-      {persona:'marcus', msgs:["Nailed it! ✅ That's exactly the right thing to do!"]},
-      {persona:'zara',   msgs:["Perfect! Well spotted and well handled!"]},
+    onLoad_2:[
+      {persona:'zara',   msgs:["Read your email, then load the Network Traffic Monitor ☝️","Open the email first. Then pick the right tool above."]},
+      {persona:'priya',  msgs:["Email first. Then Network Traffic Monitor. Go.","Read the email, load your tool. You know what to do."]},
     ],
     onActionWrong:[
-      {persona:'zara',   msgs:["Not quite — look at how much higher the traffic is compared to normal. That's the key clue!"]},
-      {persona:'marcus', msgs:["Think traffic lights: Red = way too much = block it, Amber = a bit high = slow it down, Green = normal = leave it!"]},
-    ],
-    onAllHandled:[
-      {persona:'marcus', msgs:["All done! Now choose who to send the report to. Who looks after the network?"]},
-      {persona:'zara',   msgs:["Great work! Last step — pick the right team to tell. Think about who manages the network!"]},
-    ],
-    onReportCorrect:[
-      {persona:'zara',   msgs:["The Network Operations Centre — exactly right! They'll block the attack. Brilliant! 🏆"]},
-      {persona:'marcus', msgs:["Yes! The NOC will sort it out. You're a legend!"]},
-    ],
-    onReportWrong:[
-      {persona:'priya',  msgs:["Wrong team! Think about who looks after the network... which team does that?"]},
-    ],
-    onScenarioComplete:[
-      {persona:'marcus', msgs:["DDoS stopped! Amazing work! 🎉"]},
+      {persona:'marcus', msgs:["Is that traffic level really bad, a bit much, or totally fine? 🤔","Look at the number — how many times higher than normal is it?","Think: is that a lot above normal, a bit above, or about right?"]},
+      {persona:'zara',   msgs:["Compare it to the average. Is the difference huge, moderate, or tiny?","The multiple is the key. Is it way over, a bit over, or normal?"]},
     ],
   },
 
-  // ── MALWARE ───────────────────────────────────────────────────
-  malware:{
-    onLoad_ask:[
-      {persona:'zara', msgs:["🚨 Something weird is running on one of our computers! There are strange programs showing up that shouldn't be there.","Alert! A computer is behaving strangely — there might be bad software hiding on it. We need to check!"]},
+  malware: {
+    onLoad_1:[
+      {persona:'zara',   msgs:["Something weird's running on one of our computers 😬","Suspicious program flagged on the network. Could be malware.","Odd process showing up. Might be something hiding on the system.","Unknown program detected. Time to investigate!"]},
+      {persona:'marcus', msgs:["Ooh we've got a sneaky one. Something's hiding on a machine 🕵️","Bad software alert! Something dodgy might be running on a computer."]},
     ],
-    onLoad_start:[
-      {persona:'marcus', msgs:["Open your email first, then pick the Process Monitor tool and click LOAD TOOL. That'll show us what programs are running!","Click your email, read what's happened, then load the Process Monitor. Let's find the bad guys!"]},
-    ],
-    onLoad_attack:[
-      {persona:'priya', msgs:["Malware is a bad program that secretly gets onto your computer. It can steal information, slow your computer down, or spy on what you're doing.","'Malware' is short for 'malicious software'. It's software that someone put on your computer to cause harm — without you knowing!"]},
-    ],
-    onLoad_analogy:[
-      {persona:'zara', msgs:["Imagine a spy wearing a school uniform to sneak into your school. They look like they belong there, but they're actually stealing secrets. That's what malware does — it hides on your computer pretending to be normal!","It's like a wolf in sheep's clothing. The bad program wears a disguise to look like something you'd trust."]},
-    ],
-    onToolCorrect:[
-      {persona:'zara',   msgs:["Process Monitor — perfect! Look at each program's name. Weird names or super high CPU are your clues!"]},
-      {persona:'marcus', msgs:["That's the one! If a program has a weird name AND is hogging the CPU — that's malware!"]},
-    ],
-    onToolWrong:[
-      {persona:'marcus', msgs:["Not that one! We need to see what programs are running. Which tool shows that?"]},
-      {persona:'zara',   msgs:["Think about what we're looking for — programs running on the computer. Which tool shows those?"]},
-    ],
-    onActionCorrect:[
-      {persona:'marcus', msgs:["Right call! ✅ That program is dealt with!"]},
-      {persona:'zara',   msgs:["Perfect! That's exactly how you handle it!"]},
+    onLoad_2:[
+      {persona:'marcus', msgs:["Read the email, then grab the Process Monitor. Let's see what's running!","Email first — then Process Monitor. Find the dodgy one!"]},
+      {persona:'zara',   msgs:["Open your email. Then load the Process Monitor ☝️","Read the email. Tool: Process Monitor. Go find it!"]},
     ],
     onActionWrong:[
-      {persona:'priya',  msgs:["Think about it — a strange program with a weird name using loads of CPU. That needs to be quarantined, not ignored!"]},
-      {persona:'zara',   msgs:["Unknown program + high CPU = not safe! What's the safest action to take?"]},
-    ],
-    onAllHandled:[
-      {persona:'zara',   msgs:["All sorted! Now report it. Which team deals with security problems?"]},
-    ],
-    onReportCorrect:[
-      {persona:'marcus', msgs:["Incident Response — yes! They'll clean up the infected computer. Amazing work!"]},
-    ],
-    onReportWrong:[
-      {persona:'priya',  msgs:["Wrong team. Malware is a security incident — which team handles those?"]},
-    ],
-    onScenarioComplete:[
-      {persona:'zara',   msgs:["Malware found and sorted! Excellent detective work! 🔍"]},
+      {persona:'zara',   msgs:["Look at the program NAME — is it something you'd expect to see on a computer?","Is that a real Windows program? Or does the name look odd?","Name + CPU together — what do they tell you?"]},
+      {persona:'priya',  msgs:["Unknown name? Familiar name acting strangely? Those mean different things.","Think about whether you'd expect to see that program name on a computer."]},
     ],
   },
 
-  // ── RANSOMWARE ────────────────────────────────────────────────
-  ransomware:{
-    onLoad_ask:[
-      {persona:'priya', msgs:["🚨 Emergency! Files on our computer drives are being locked up! Someone might be using ransomware on us!","RED ALERT! File drives are showing something really worrying — files getting encrypted. We need to act fast!"]},
+  ransomware: {
+    onLoad_1:[
+      {persona:'priya',  msgs:["Files are being locked up on our drives. This is serious 🔒","Encryption alert — files are changing to weird extensions.","Something's scrambling our files. Could be ransomware.","File drives are acting very strange. We need to check now."]},
+      {persona:'zara',   msgs:["Files are getting encrypted — that's really bad. Check it quickly!","Unusual file activity. Some drives might be under attack."]},
     ],
-    onLoad_start:[
-      {persona:'zara', msgs:["Click your email, read the alert, then load the File System Monitor tool. Quick — every second counts with ransomware!","Open your email first, then choose File System Monitor from the dropdown and hit LOAD TOOL!"]},
-    ],
-    onLoad_attack:[
-      {persona:'marcus', msgs:["Ransomware is a type of bad software that locks all your files so you can't open them. Then the hackers demand money to give you the key. If you don't pay — you might lose everything!","Ransomware 'encrypts' your files — that means it scrambles them so they're unreadable. Then the attacker says 'pay us money and we'll unscramble them!'"]},
-    ],
-    onLoad_analogy:[
-      {persona:'priya', msgs:["Imagine coming home and finding a padlock on your bedroom door. There's a note: 'Pay us £500 or you can never get back inside.' That's exactly what ransomware does — but with your files on a computer! 🔒","Think of it like someone taking all your homework and locking it in a safe. They say 'give me all your pocket money or you'll never see it again!'"]},
-    ],
-    onToolCorrect:[
-      {persona:'zara',   msgs:["File System Monitor — right! Check each drive. Are files being encrypted? How fast?"]},
-      {persona:'marcus', msgs:["That's it! Now look — if files are being locked up quickly, that's really bad!"]},
-    ],
-    onToolWrong:[
-      {persona:'zara',   msgs:["Not that one — we need to look at the files on our drives. Which tool monitors file systems?"]},
-      {persona:'marcus', msgs:["Think about what we need to see — what's happening to the files. Which tool shows that?"]},
-    ],
-    onActionCorrect:[
-      {persona:'marcus', msgs:["Yes! Perfect action! ✅"]},
-      {persona:'priya',  msgs:["Correct! That stops the spread. Well done!"]},
+    onLoad_2:[
+      {persona:'zara',   msgs:["Read the email, then load the File Integrity Monitor. Quick!","Email first. Then File Integrity Monitor. Every second counts here!"]},
+      {persona:'marcus', msgs:["Email → File Integrity Monitor. Go go go! ⚡","Read it, then load the File Integrity Monitor. Fast!"]},
     ],
     onActionWrong:[
-      {persona:'priya',  msgs:["Think again — if files are being locked up quickly, what's the most important thing to do?"]},
-      {persona:'zara',   msgs:["Red = lots of files encrypted = isolate the drive immediately! We can't let it spread!"]},
-    ],
-    onAllHandled:[
-      {persona:'zara',   msgs:["All drives assessed! Now tell the right team — who handles cyber emergencies?"]},
-    ],
-    onReportCorrect:[
-      {persona:'marcus', msgs:["Incident Response team — spot on! They'll isolate the computers and start recovery. Hero! 🦸"]},
-    ],
-    onReportWrong:[
-      {persona:'priya',  msgs:["Wrong team. Ransomware is a major emergency — which team responds to attacks?"]},
-    ],
-    onScenarioComplete:[
-      {persona:'zara',   msgs:["Ransomware contained! Really impressive work! 🌟"]},
+      {persona:'priya',  msgs:["Look at how many files are affected and what extension they've got.","Is that a lot of files changed, a few, or none? And what does the extension mean?","Think: is this a normal file type, or something you'd never normally see?"]},
+      {persona:'zara',   msgs:["What does that file extension tell you? Have you seen it before?","Check the number of encrypted files — is it a lot, a little, or totally normal?"]},
     ],
   },
 
-  // ── PHISHING IDENTIFIER ───────────────────────────────────────
-  phishingModule:{
-    onLoad_ask:[
-      {persona:'zara', msgs:["🚨 We've got a batch of suspicious emails. Some are real, some are fakes trying to trick people. Can you spot the fakes?","Alert! Some emails came in and we're not sure if they're real or fake. Help us sort the good ones from the bad ones!"]},
+  phishingModule: {
+    onLoad_1:[
+      {persona:'priya',  msgs:["Got a batch of emails — some real, some fake. Spot the fakes 🔍","Phishing alert. Some of these emails aren't what they look like.","Suspicious emails landed. Some are genuine, some are traps.","Email batch in. One or more might be phishing attempts."]},
+      {persona:'zara',   msgs:["Dodgy emails to review. Check every sender address carefully.","Some of these are fake. The clues are in the addresses."]},
     ],
-    onLoad_start:[
-      {persona:'priya', msgs:["Read your email, then load the Email Header Analyser. You'll see a list of emails — spot the fake ones and report them!","Open your email first, then pick the Email Header Analyser. Look at each email address really carefully!"]},
-    ],
-    onLoad_attack:[
-      {persona:'marcus', msgs:["Phishing is when someone sends a fake email pretending to be a real company — like your bank or Amazon. They're trying to trick you into clicking a bad link or giving away your password!","A phishing email looks real but it's fake. The clue is usually in the email address — it'll have a tiny spelling mistake or a weird domain name."]},
-    ],
-    onLoad_analogy:[
-      {persona:'zara', msgs:["Imagine getting a letter that looks like it's from your school, but someone pretending made it. They're hoping you'll give them your locker combination! That's phishing — fake messages trying to steal your info. 🎣","It's like a fishing hook with fake bait on it. The hackers dangle a convincing-looking email and hope you 'bite' and click the link!"]},
-    ],
-    onToolCorrect:[
-      {persona:'zara',   msgs:["Email Header Analyser — perfect! Now look at each email address very carefully. Even one wrong letter is a red flag!"]},
-      {persona:'priya',  msgs:["Great choice! Check the 'From' address on each one. Hackers often swap letters for numbers — like 0 for O!"]},
-    ],
-    onToolWrong:[
-      {persona:'zara',   msgs:["Not that one — we need to look at email addresses. Which tool does that?"]},
-      {persona:'priya',  msgs:["Think about what we're investigating — email addresses. Which tool analyses those?"]},
-    ],
-    onActionCorrect:[
-      {persona:'marcus', msgs:["Correct! ✅ Great spotting!"]},
-      {persona:'zara',   msgs:["Well done! You've got a sharp eye!"]},
+    onLoad_2:[
+      {persona:'zara',   msgs:["Read your email, then load the Email Header Analyser. Check each address!","Email first. Then the Email Header Analyser. Look very carefully at each address 👁️"]},
+      {persona:'priya',  msgs:["Email → Email Header Analyser. Every letter matters.","Read the brief. Then load the Email Header Analyser. Go."]},
     ],
     onActionWrong:[
-      {persona:'priya',  msgs:["Look again at the email address. Is every letter exactly right? Even tiny differences are a big clue!"]},
-      {persona:'zara',   msgs:["Check the domain name very carefully. A real company uses their proper address — fakes have small mistakes!"]},
-    ],
-    onAllHandled:[
-      {persona:'zara',   msgs:["All emails checked! Now report to the right team — who handles email security?"]},
-    ],
-    onReportCorrect:[
-      {persona:'priya',  msgs:["IT Security team — exactly right! They'll block those fake addresses. Brilliant! 🏆"]},
-    ],
-    onReportWrong:[
-      {persona:'zara',   msgs:["Wrong team. Email phishing is a security issue — which team handles that?"]},
-    ],
-    onScenarioComplete:[
-      {persona:'marcus', msgs:["All fakes identified! You're going to be an amazing detective! 🕵️"]},
+      {persona:'priya',  msgs:["Look at every single character in that address. Every. Single. One.","Is that address exactly right? Check for swapped letters or numbers.","Hackers often swap one letter for a number. Can you spot it?"]},
+      {persona:'zara',   msgs:["Read the address letter by letter. Is it the real company's address?","Compare it to what you'd expect. Even one wrong character = fake."]},
     ],
   },
 
@@ -215,27 +186,30 @@ const MODULE_GROUP_CHAT = {
 // ── PHISHING EXCEPTION CHAT ────────────────────────────────────
 const PHISHING_EXCEPTION_CHAT = {
   onPhishingArrived:[
-    {persona:'priya', msgs:["⚠️ Hold on — look very carefully at that email sender before you click anything!"]},
-    {persona:'zara',  msgs:["Wait! Check who sent that email. Does the address look exactly right?"]},
+    {persona:'priya', msgs:["Hold on — check that sender address before you do anything 👀"]},
+    {persona:'zara',  msgs:["Wait — look very carefully at who sent that. Does it look exactly right?"]},
+    {persona:'marcus',msgs:["Ooh... look at that email address carefully before you click anything! 🔍"]},
   ],
   onOpened:[
-    {persona:'zara',  msgs:["Oh no — that was a fake email! Always check the sender address first. Don't worry, we learn from our mistakes! 💪"]},
-    {persona:'marcus',msgs:["Uh oh! That one was a phishing email in disguise. Check those addresses carefully next time!"]},
+    {persona:'zara',  msgs:["Oh no — that was a fake email! Always check the address first. You'll get it next time! 💪"]},
+    {persona:'marcus',msgs:["Sneaky one! That was a phishing email in disguise. Check those addresses next time!"]},
+    {persona:'priya', msgs:["That one fooled you. The address had a tiny mistake. You'll spot it next time."]},
   ],
   onReported:[
-    {persona:'priya', msgs:["Yes! Amazing spotting — you caught the fake email! ⭐"]},
-    {persona:'zara',  msgs:["Brilliant! You spotted the fake address and reported it. That's exactly right!"]},
+    {persona:'marcus',msgs:["YES! Spotted the fake! You're sharp! ⭐","You caught it! That's the eye we need! 🎯"]},
+    {persona:'zara',  msgs:["Brilliant — fake address, reported immediately. That's exactly right! 🏆","Great spotting! You didn't get fooled. Excellent! 🌟"]},
+    {persona:'priya', msgs:["Correct. Fake address caught. ✓","You got it. Nice work."]},
   ],
 };
 
 // ── IP TRACE CHAT ──────────────────────────────────────────────
 const IP_TRACE_CHAT = {
   onWin:[
-    {persona:'marcus', msgs:["YES! You tracked the hacker across the whole map! Incredible! 🌍🔒"]},
-    {persona:'priya',  msgs:["Every IP confirmed and the hacker is locked out! Outstanding! 🏆"]},
+    {persona:'marcus', msgs:["YESSS!! You tracked the hacker! LEGEND! 🌍🔒","Every IP confirmed! That was outstanding! 🏆","You hunted them across the globe! INCREDIBLE! 🎯"]},
+    {persona:'zara',   msgs:["Perfect trace — hacker locked out! Outstanding! 🌟","You got every single one. That was impressive!"]},
   ],
   onLose:[
-    {persona:'zara',   msgs:["So close! Watch the map really carefully — each city has its own IP address. You've got this!"]},
-    {persona:'marcus', msgs:["Nearly got them! Keep your eyes on the IP display panel — it shows the right number!"]},
+    {persona:'zara',   msgs:["So close! Watch the IP panel — it shows the number clearly.","Keep your eyes on the display — each location has its own IP!"]},
+    {persona:'marcus', msgs:["Nearly got them! The IP shows right there on screen — grab it! 💪","You'll get them next time! Watch the numbers!"]},
   ],
 };
