@@ -985,10 +985,7 @@ MODULES.phishingModule = {
   },
 };
 
-// ── MODULE LIST: 4 core modules only ───────────────────────────
-// Exceptions (__phish__ and __iptrace__) are still present in engine.js
-MODULE_LIST.length = 0;
-['ddos','malware','ransomware','phishingModule'].forEach(m => MODULE_LIST.push(m));
+// MODULE_LIST is set at the bottom of this file with all 5 modules
 
 // Add columns for phishingModule
 MODULE_COLUMNS.phishingModule = [
@@ -1021,131 +1018,135 @@ if (!MODULE_ACTIONS.ransomware) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// MODULE 10: BRUTE FORCE ATTACK
-// Students use the Access Attempt Analyser to review login
-// entries across system accounts. They must identify which
-// accounts are under automated brute-force attack (rapid,
-// systematic password guessing from one or few IPs) vs normal
-// failed logins or successful admin sessions.
+// MODULE 5: BRUTE FORCE ATTACK (rewritten for age 9)
 // ─────────────────────────────────────────────────────────────
 MODULES.bruteForce = {
   id: 'bruteForce',
-  name: 'BRUTE FORCE ATTACK',
-  emailSender: () => pick([
-    'siem@secalerts.net',
-    'lockout-monitor@sysops.io',
-    'access-watch@cyberops.com',
-    'iam-alerts@identity.corp',
-  ]),
-  emailSubject: () => pick([
-    'Account Lockout Spike Detected',
-    'Repeated Failed Login Attempts — Review Required',
-    'Brute Force Warning: Multiple Account Lockouts',
-    'SIEM Alert: Systematic Password Guessing Detected',
-  ]),
-  emailBody(scenario) {
+  name: 'PASSWORD ATTACK',
+  emailSender: () => pick(['alerts@loginwatch.net','monitor@secops.io','access-alerts@network.local']),
+  emailSubject: () => pick(['Password Guessing Alert!','Login Attempts Spiking','Suspicious Login Activity Detected','Account Attack Warning']),
+  emailBody() {
     return pick([
-      `Hi Agent,\n\nOur SIEM has flagged a pattern of rapid repeated login failures across several system accounts. This could indicate an automated brute-force attack — a programme systematically trying thousands of passwords.\n\nPlease load the Access Attempt Analyser and assess each account.\n\nSecurity Operations`,
-      `Hello,\n\nAccount lockout monitors have triggered on multiple accounts in a short window. Some may be under brute-force attack. Please investigate using the Access Attempt Analyser.\n\nIAM Team`,
-      `Hi,\n\nWe've seen unusual login attempt patterns. Brute force tools can try millions of passwords automatically. Load the Access Attempt Analyser and check for the telltale signs.\n\nSOC Team`,
-      `Hi Agent,\n\nLockout events are spiking across the board. A brute force attack is like someone trying every key on a keyring — very fast, very systematic. Please review and respond.\n\nSysOps`,
+      `Hi,\n\nSomething weird is happening with our login system. Someone — or something — is trying to guess passwords really fast!\n\nCan you check which accounts are under attack using the Access Attempt Analyser?\n\nThanks,\nSecurity Team`,
+      `Hello Agent,\n\nOur login monitor flagged some accounts getting hammered with password guesses. Some are fine, some look like a real attack.\n\nPlease load the Access Attempt Analyser and check each one!\n\nAccess Watch`,
+      `Hi,\n\nAlert! Something is trying to break into accounts by guessing passwords over and over. Load the Access Attempt Analyser — look at how fast the attempts are and how many computers are doing it.\n\nLogin Monitor`,
     ]);
   },
   tools: {
     correct: 'Access Attempt Analyser',
-    decoys: [
-      'Network Traffic Monitor',
-      'File Integrity Monitor',
-      'SSL Certificate Inspector',
-      'DLP Monitor',
-      'Vulnerability Scanner Dashboard',
-      'Email Header Analyser',
-    ],
+    decoys: ['Network Traffic Monitor','File Integrity Monitor','Email Header Analyser','Process Monitor','Password Checker'],
   },
-
   generateScenario() {
     const accounts = [
-      { name: 'admin',              purpose: 'System administrator account' },
-      { name: 'svc_backup',         purpose: 'Automated backup service account' },
-      { name: 'j.henderson',        purpose: 'Finance director user account' },
-      { name: 'root',               purpose: 'Linux root superuser account' },
-      { name: 'webserver_app',      purpose: 'Web application service account' },
-      { name: 'k.okafor',           purpose: 'HR manager user account' },
-      { name: 'database_svc',       purpose: 'Database connection service account' },
-      { name: 'deploy_bot',         purpose: 'Automated CI/CD deployment account' },
-      { name: 's.mehta',            purpose: 'Developer user account' },
-      { name: 'vpn_gateway',        purpose: 'VPN authentication endpoint' },
+      { name: 'admin',       purpose: 'Main admin account' },
+      { name: 'j.henderson', purpose: 'Staff account' },
+      { name: 'ceo',         purpose: 'CEO account — very sensitive!' },
+      { name: 'svc_backup',  purpose: 'Backup service account' },
+      { name: 'k.okafor',    purpose: 'Staff account' },
+      { name: 'root',        purpose: 'Super-admin account' },
+      { name: 'reception',   purpose: 'Reception desk account' },
+      { name: 's.mehta',     purpose: 'Staff account' },
+      { name: 'db_service',  purpose: 'Database account' },
+      { name: 'webserver',   purpose: 'Web server account' },
     ];
 
     const chosen = shuffle(accounts).slice(0, 5);
-    // Always at least 1 brute-force, at most 3, to keep answers clear
     const numAttacked = randInt(1, 3);
 
     return chosen.map((acc, i) => {
-      const isAttacked = i < numAttacked;
+      const isAttacked    = i < numAttacked;
+      // Edge case 1: account was locked AND then a successful login appeared
+      const isCompromised = isAttacked && Math.random() > 0.65;
+      // Edge case 2: lots of attempts but from MANY IPs — distributed / credential stuffing
+      const isDistributed = isAttacked && !isCompromised && Math.random() > 0.6;
 
-      // Brute force: very high attempts, very few source IPs (1–3), short time span, systematic intervals
-      // Normal: low attempts, varied IPs (could be many legit users), longer span
-      const attemptsPerMin = isAttacked ? randInt(180, 1200) : randInt(0, 8);
-      const sourceIPs      = isAttacked ? randInt(1, 3)      : randInt(1, 40);
-      const timeSpanSecs   = isAttacked ? randInt(12, 90)    : randInt(300, 3600);
-      const intervalMs     = isAttacked ? randInt(20, 280)   : null; // systematic = fixed short interval
-      const locked         = isAttacked && Math.random() > 0.35;
-      const successAfter   = isAttacked && locked && Math.random() > 0.6;
+      let attemptsPerMin, sourceIPs, intervalMs, ragAnswer, actionAnswer, notes;
 
-      let ragAnswer, actionAnswer, notes;
+      if (!isAttacked) {
+        attemptsPerMin = randInt(0, 7);
+        sourceIPs      = randInt(3, 45);
+        intervalMs     = 'Varied';
+        ragAnswer = 'G'; actionAnswer = 'ignore';
+        notes = `${attemptsPerMin}/min across ${sourceIPs} different devices — just normal mistypes.`;
 
-      if (isAttacked && successAfter) {
-        ragAnswer    = 'R';
-        actionAnswer = 'lockAccount';
-        notes = `${attemptsPerMin.toLocaleString()} attempts/min from only ${sourceIPs} IP${sourceIPs>1?'s':''}. Account LOCKED — then a successful login followed. Likely compromised! → RED: Lock account immediately.`;
-      } else if (isAttacked) {
-        ragAnswer    = 'A';
-        actionAnswer = 'lockAccount';
-        notes = `${attemptsPerMin.toLocaleString()} attempts/min from ${sourceIPs} IP${sourceIPs>1?'s':''} in ${timeSpanSecs}s — systematic brute force pattern. → AMBER: Lock the account to stop the attack.`;
+      } else if (isCompromised) {
+        // Locked — then someone got in
+        attemptsPerMin = randInt(150, 800);
+        sourceIPs      = randInt(1, 2);
+        intervalMs     = `~${randInt(30,200)}ms`;
+        ragAnswer = 'R'; actionAnswer = 'lockAccount';
+        notes = `Account locked after ${attemptsPerMin.toLocaleString()} rapid attempts — then a successful login appeared ⚠`;
+
+      } else if (isDistributed) {
+        // Many IPs but still suspicious — harder edge case
+        attemptsPerMin = randInt(200, 900);
+        sourceIPs      = randInt(60, 300);
+        intervalMs     = 'Varied';
+        ragAnswer = 'A'; actionAnswer = 'investigate';
+        notes = `${attemptsPerMin.toLocaleString()}/min but from ${sourceIPs} different locations — coordinated but spread out.`;
+
       } else {
-        ragAnswer    = 'G';
-        actionAnswer = 'ignore';
-        notes = `${attemptsPerMin} attempts/min across ${sourceIPs} IPs — normal variance. Likely users mistyping passwords. → GREEN: No action needed.`;
+        // Classic brute force
+        const interval = randInt(20, 250);
+        attemptsPerMin = randInt(120, 2000);
+        sourceIPs      = randInt(1, 3);
+        intervalMs     = `~${interval}ms`;
+        if (attemptsPerMin > 400 || sourceIPs === 1) {
+          ragAnswer = 'R'; actionAnswer = 'lockAccount';
+          notes = `${attemptsPerMin.toLocaleString()}/min from ${sourceIPs === 1 ? 'just 1 computer' : sourceIPs+' computers'} — every ~${interval}ms, very systematic.`;
+        } else {
+          ragAnswer = 'A'; actionAnswer = 'investigate';
+          notes = `${attemptsPerMin.toLocaleString()}/min from ${sourceIPs} computers — attempts every ${interval}ms, looks robotic.`;
+        }
       }
 
       return {
-        name:           acc.name,
-        purpose:        acc.purpose,
-        attemptsPerMin,
-        sourceIPs,
-        timeSpanSecs,
-        intervalMs:     intervalMs ? `~${intervalMs}ms` : 'Varied',
-        accountLocked:  locked ? 'YES ⚠' : 'No',
-        ragAnswer,
-        actionAnswer,
-        notes,
-        handled:   false,
-        userRag:   null,
-        userAction:null,
+        name: acc.name, purpose: acc.purpose,
+        attemptsPerMin, sourceIPs, intervalMs,
+        ragAnswer, actionAnswer, notes,
+        handled: false, userRag: null, userAction: null,
       };
     });
   },
-
   reportTeams: {
     correct:   'Identity & Access Management (IAM) Team',
     incorrect: 'Facilities Management Team',
   },
-
   completionText(mode, scenario) {
     const attacked = scenario.filter(s => s.ragAnswer !== 'G');
-    const isClean  = attacked.length === 0;
-    if (isClean) {
-      return `<div class="rc ok"><h3>✓ All Clear — No Brute Force Detected</h3>
-        <p>All login patterns looked normal today — just the usual occasional mistyped password. Good job verifying everything rather than assuming!</p></div>`;
+    if (!attacked.length) {
+      return `<div class="rc ok"><h3>✓ All Clear — logins look normal!</h3><p>Just the usual occasional mistype. Good check!</p></div>`;
     }
-    return `<div class="rc info"><h3>WHAT IS A BRUTE FORCE ATTACK?</h3>
-      <p>A brute force attack is when an attacker uses a computer program to automatically try thousands or even millions of passwords until it finds the right one — like trying every possible combination on a combination lock.</p>
-      <p style="margin-top:8px;">The telltale signs are: <strong>very high attempts per minute</strong> (a human can't type that fast!), from <strong>very few IP addresses</strong> (one computer doing all the guessing), and with a <strong>very consistent interval</strong> between each attempt (like clockwork — that's a robot, not a human).</p>
-      <p style="margin-top:8px;">Locking the account stops the attack immediately, even if they haven't guessed the password yet!</p>
-    </div>`;
+    return `<div class="rc info"><h3>PASSWORD ATTACK — KEY FACTS</h3>
+      <p>A brute force attack uses a program to try thousands of passwords automatically — way faster than a human could type.</p>
+      <p style="margin-top:8px;">Key clues: very high attempts, from very few IPs, with a robotic regular interval. Locking the account stops it even if the password hasn't been guessed yet.</p></div>`;
+  },
+  plenary: {
+    reportHint:   'Password attacks are about breaking into accounts — which team manages who can log in?',
+    analogy:      '🔑 Like trying every locker combination at school until one works — except a computer tries millions in seconds!',
+    whatHappened: 'A program was automatically firing password guesses at our accounts, over and over, trying to break in.',
+    keyMove:      'Very fast + very few IPs + clockwork timing = Lock it. Suspicious pattern = Investigate. Normal occasional typos = Leave it.',
+    realWorld:    'This is why "password123" is dangerous — it would be cracked in seconds. A long random password takes years!',
+    quiz: [
+      { q: '800 login attempts per minute from 1 computer. What is it?', options: ['Normal — people type fast 🤷', 'A brute force attack 🔴', 'A DDoS attack 🌊'], correct: 1 },
+      { q: 'Which password survives a brute force attack longest?', options: ["cat123 🐱", "xK9#mQ2! 🔐", "your birthday 🎂"], correct: 1 },
+    ]
   },
 };
 
-// bruteForce module kept in codebase for reference but removed from active MODULE_LIST
-// MODULE_LIST is set above to: ddos, malware, ransomware, phishingModule
+// ── MODULE POOL: 5 modules — engine picks 4 at random each session ──
+MODULE_LIST.length = 0;
+['ddos','malware','ransomware','phishingModule','bruteForce'].forEach(m => MODULE_LIST.push(m));
+
+MODULE_COLUMNS.bruteForce = [
+  { key: 'name',           label: 'ACCOUNT' },
+  { key: 'attemptsPerMin', label: 'ATTEMPTS/MIN' },
+  { key: 'sourceIPs',      label: 'SOURCE IPs' },
+  { key: 'intervalMs',     label: 'INTERVAL' },
+];
+
+MODULE_ACTIONS.bruteForce = [
+  { id: 'lockAccount', label: '🔒 LOCK ACCOUNT',   cls: 'btn-r' },
+  { id: 'investigate', label: '🔍 INVESTIGATE',    cls: 'btn-a' },
+  { id: 'ignore',      label: '✓ IGNORE (Normal)', cls: 'btn-d' },
+];

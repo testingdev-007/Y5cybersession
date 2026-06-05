@@ -181,6 +181,21 @@ const MODULE_GROUP_CHAT = {
     ],
   },
 
+  bruteForce: {
+    onLoad_1:[
+      {persona:'marcus', msgs:["Someone's computer is hammering our login page with password guesses! 🔑","Password attack! Something's trying to break into accounts really fast.","Login alert! Loads of password attempts on some accounts — could be an attack!","Uh oh — our login monitor flagged something. Looks like a password guessing attack."]},
+      {persona:'zara',   msgs:["Unusual login activity detected. Might be someone trying to crack passwords.","Something's trying to guess its way into our accounts. Let's check it out."]},
+    ],
+    onLoad_2:[
+      {persona:'zara',   msgs:["Read your email, then load the Access Attempt Analyser. Check how fast the attempts are!","Email first — then pick the Access Attempt Analyser. Look at the numbers!"]},
+      {persona:'marcus', msgs:["Email → Access Attempt Analyser. How many attempts? From how many computers? Go!","Read the brief, load the Access Attempt Analyser. Is it a robot or a human typing?"]},
+    ],
+    onActionWrong:[
+      {persona:'marcus', msgs:["Think — could a human actually type that fast? 🤔","Look at the attempts per minute AND how many IPs. What do those numbers tell you?","Is the timing random like a human, or super regular like a robot?"]},
+      {persona:'zara',   msgs:["Check the interval — is it perfectly regular? That's the robot giveaway.","Look at both the speed AND the number of source IPs together.","A few IPs + very fast + regular timing = not a human. Does this match?"]},
+    ],
+  },
+
 };
 
 // ── PHISHING EXCEPTION CHAT ────────────────────────────────────
@@ -204,12 +219,22 @@ const PHISHING_EXCEPTION_CHAT = {
 
 // ── IP TRACE CHAT ──────────────────────────────────────────────
 const IP_TRACE_CHAT = {
+  onStart:[
+    {persona:'marcus', msgs:["🚨 RED ALERT! Someone is hacking in RIGHT NOW — track them!","INTRUDER!! Chase them across the map! 🌍","Oh no — they're IN! Quick, find where they're connecting from!","LIVE HACK!! Let's go — trace their location!"]},
+    {persona:'zara',   msgs:["Someone's hacking us live! Follow them through the map!","Active intrusion! Chase them — pick the right IP at each hop!"]},
+    {persona:'priya',  msgs:["Active intrusion. Track each location as they jump.","Hacker detected. Follow the signal — pick each IP."]},
+  ],
+  onHop:[
+    {persona:'marcus', msgs:["JUMP! Keep going! 🎯","They moved! Stay on them!","Yes! Next one!","BOOM! Got that hop! 💪","One more down!","Chase them!"]},
+    {persona:'zara',   msgs:["Good! Keep tracking!","Stay focused — next hop!","Don't let them get away!","Keep going!"]},
+    {persona:'priya',  msgs:["Signal acquired. Next.","Keep tracking.","They're trying to lose you.","Next location."]},
+  ],
   onWin:[
-    {persona:'marcus', msgs:["YESSS!! You tracked the hacker! LEGEND! 🌍🔒","Every IP confirmed! That was outstanding! 🏆","You hunted them across the globe! INCREDIBLE! 🎯"]},
-    {persona:'zara',   msgs:["Perfect trace — hacker locked out! Outstanding! 🌟","You got every single one. That was impressive!"]},
+    {persona:'marcus', msgs:["YESSS!! You tracked the hacker! LEGEND! 🌍🔒","Every IP confirmed! Outstanding! 🏆","You hunted them across the GLOBE! INCREDIBLE! 🎯"]},
+    {persona:'zara',   msgs:["Perfect trace — hacker locked out! 🌟","You got every single one. Impressive!"]},
   ],
   onLose:[
-    {persona:'zara',   msgs:["So close! Watch the IP panel — it shows the number clearly.","Keep your eyes on the display — each location has its own IP!"]},
-    {persona:'marcus', msgs:["Nearly got them! The IP shows right there on screen — grab it! 💪","You'll get them next time! Watch the numbers!"]},
+    {persona:'zara',   msgs:["So close! Watch the IP panel — it shows the number clearly.","The IP is right there on screen — read it carefully!"]},
+    {persona:'marcus', msgs:["Nearly got them! Watch those numbers! 💪","You'll get them next time!"]},
   ],
 };

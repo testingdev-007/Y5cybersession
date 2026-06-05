@@ -181,10 +181,10 @@ function applyAdmin(){
 // ── REFRESH INBOX ─────────────────────────────────────────────
 function refreshInbox(){
   try{SFX.newMail();}catch(e){}try{VOX.newEmail();}catch(e){}clearTimeout(GS.autoTimer);
-  // Stop the pulsing glow on the refresh button
   document.getElementById('btnRefresh').classList.remove('pulse-glow');
   if(GS.active){toast('Finish your current mission first!','warn');return;}
-  if(GS.round>=GS.totalRounds){showEndgame();return;}
+  // Only show endgame when ALL rounds done AND no exceptions left in queue
+  if(GS.round>=GS.totalRounds&&!GS.queue.length){showEndgame();return;}
   if(GS.forceMod){const m=GS.forceMod;GS.forceMod=null;dispatchMod(m);return;}
   if(!GS.queue.length)buildQueue();
   dispatchMod(GS.queue.shift());
@@ -195,26 +195,22 @@ function dispatchMod(id){
   else loadModule(id);
 }
 function buildQueue(){
-  // Build exactly totalRounds real modules — exceptions are BONUS and don't count
+  // 4 core modules, shuffled
   const mods=shuffle([...MODULE_LIST]).slice(0,GS.totalRounds);
-  if(!GS.phishDone&&Math.random()>.5){
-    // Insert at random position — doesn't increase totalRounds
-    mods.splice(randInt(0,mods.length),0,'__phish__');
-    GS.phishDone=true;
-  }
-  if(!GS.ipDone&&Math.random()>.55){
-    let p=randInt(0,mods.length);
-    while(mods[p]==='__phish__')p=randInt(0,mods.length);
-    mods.splice(p,0,'__iptrace__');
-    GS.ipDone=true;
-  }
+  // BOTH exceptions are guaranteed every session — always inserted at random positions
+  mods.splice(randInt(0,mods.length),0,'__phish__');
+  let p=randInt(0,mods.length);
+  while(mods[p]==='__phish__')p=randInt(0,mods.length); // don't stack next to each other
+  mods.splice(p,0,'__iptrace__');
   GS.queue=mods;
 }
 function schedAutoAdvance(delay=18000){
   clearTimeout(GS.autoTimer);
-  if(!GS.active&&GS.round<GS.totalRounds){
+  // Keep going while there are rounds left OR exceptions still in the queue
+  const moreToGo=GS.round<GS.totalRounds||GS.queue.length>0;
+  if(!GS.active&&moreToGo){
     GS.autoTimer=setTimeout(()=>{
-      if(!GS.active&&GS.round<GS.totalRounds){
+      if(!GS.active&&(GS.round<GS.totalRounds||GS.queue.length>0)){
         gcMsg('marcus',pick(['New email just arrived — get ready!','Heads up, another case just landed!','Fresh one in the inbox!']));
         setTimeout(refreshInbox,1500);
       }
@@ -384,6 +380,7 @@ const MODULE_LEGENDS = {
   malware:        '🔴 Unknown program → Quarantine   🟡 Real but acting odd → Investigate   🟢 Known & normal → Leave it',
   ransomware:     '🔴 Bad extension + lots encrypted → Isolate   🟡 Suspicious extension, few files → Investigate   🟢 Normal → Leave it',
   phishingModule: '🔴 Fake address → Report   🟢 Real address → Deliver it',
+  bruteForce:     '🔴 Very fast + very few IPs → Lock   🟡 Suspicious pattern → Investigate   🟢 Normal typos → Leave it',
 };
 
 // ── RENDER TABLE (card layout) ─────────────────────────────────
@@ -513,7 +510,7 @@ function showResults(savedId){
   // Report result appended later by plenReport() once answered
   h+=`<div id="reportResultSlot"></div>`;
   document.getElementById('resultsView').innerHTML=h;showTab('R');
-  if(GS.round>=GS.totalRounds)setTimeout(showEndgame,9000);
+  if(GS.round>=GS.totalRounds&&!GS.queue.length)setTimeout(showEndgame,9000);
 }
 
 // ── DDOS GRAPH ────────────────────────────────────────────────
@@ -639,9 +636,8 @@ const TRACER={
 function loadIPTrace(){
   try{SFX.alert();}catch(e){}
   document.body.classList.add('alert-mode');setSim('🔴 INTRUSION DETECTED');
-  setSCDis(true);
   GS.active=true;
-  const e=pick(IP_TRACE_CHAT.onStart);gcMsg(e.persona,pick(e.msgs),400);
+  const e1=pick(IP_TRACE_CHAT.onStart);gcMsg(e1.persona,pick(e1.msgs),400);
   setTimeout(()=>{const e2=pick(IP_TRACE_CHAT.onStart);gcMsg(e2.persona,pick(e2.msgs));},3200);
   document.getElementById('ipMode').style.display='';
   document.getElementById('ipTrace').style.display='none';
@@ -702,18 +698,16 @@ function startTrace(){
 
 function startIPCountdown(){
   const s=GS.ip;
-  const hopInterval=Math.floor(60000/s.hops.length);
+  // Only the 60-second pressure clock — hops advance when the child answers, not on a timer
   s.ti=setInterval(()=>{
     s.timer--;
     const el=document.getElementById('ipTimer');
     el.textContent=s.timer;
     if(s.timer<=15){el.classList.add('danger');try{SFX.tick();}catch(ex){};}
-    if(s.timer<=15&&s.timer===15){try{SFX.bgIntensify();}catch(ex){}}
-    if(s.timer<=0){clearInterval(s.ti);clearInterval(s.hopInt);endTrace(false,'Time ran out!');}
+    if(s.timer===15){try{SFX.bgIntensify();}catch(ex){}}
+    if(s.timer<=0){clearInterval(s.ti);endTrace(false,'Time ran out!');}
   },1000);
-  s.hopInt=setInterval(()=>{
-    if(!s.waitingForAnswer&&!s.done) advanceHop();
-  },hopInterval);
+  // NO hopInt — hops advance immediately when the child answers correctly
 }
 
 function advanceHop(){
@@ -722,7 +716,8 @@ function advanceHop(){
   const hop=s.hops[s.cur];
   flashHop(hop,false,()=>{
     document.getElementById('ipHopInfo').textContent='HOP '+(s.cur+1)+'/'+s.hops.length+' — '+hop.city+', '+hop.country;
-    gcMsg(pick(['zara','marcus','priya']),pick(IP_TRACE_CHAT.onHop.flatMap(e=>e.msgs)));
+    const pool=IP_TRACE_CHAT.onHop;
+    if(pool){const e=pick(pool);gcMsg(e.persona,pick(e.msgs));}
     presentHopChallenge(s.cur);
   });
 }
@@ -887,6 +882,7 @@ function presentHopChallenge(hopIdx){
   try{SFX.sonar();}catch(ex){}
   const s=GS.ip;const hop=s.hops[hopIdx];
   s.waitingForAnswer=true;s.currentChallengeHop=hopIdx;
+  s.hopStartTime=Date.now(); // track when this challenge was shown (for glitch mechanic)
   const isFinal=(hopIdx===s.hops.length-1);
   try{ isFinal ? VOX.ipFinal(hop.city,hop.country) : VOX.ipHop(hop.city,hop.country); }catch(ex){}
 
@@ -914,29 +910,67 @@ function handleHopAnswer(correct,hop,isFinal){
   stopMapPulse();
   document.getElementById('ipEasyOpts').innerHTML='';
   const s=GS.ip;
+  const elapsed=Date.now()-(s.hopStartTime||0);
+
   if(!correct){
-    clearInterval(s.ti);clearInterval(s.hopInt);
+    clearInterval(s.ti);
     try{SFX.bgStop();}catch(ex){}
     endTrace(false,'Wrong IP for '+hop.city+'! Correct was: '+hop.ip);
     return;
   }
-  // Correct
+
   s.waitingForAnswer=false;
   try{SFX.correct();}catch(ex){}try{VOX.ipCorrectHop();}catch(ex){}
+
   if(isFinal){
-    clearInterval(s.ti);clearInterval(s.hopInt);
+    clearInterval(s.ti);
     try{SFX.bgStop();}catch(ex){}
     endTrace(true,'');
+  } else if(elapsed<2000){
+    // Too quick — hacker noticed the trace and threw up a decoy!
+    triggerTraceGlitch(()=>advanceHop());
   } else {
-    document.getElementById('ipStat').textContent='✓ Correct! Tracking next hop…';
+    document.getElementById('ipStat').textContent='✓ Got them! Tracking next location…';
+    setTimeout(()=>advanceHop(),400);
   }
+}
+
+// Glitch effect — fires when child answers too quickly (under 2s)
+// Story: the hacker spotted them and tried to throw off the trace
+function triggerTraceGlitch(onResume){
+  const statEl=document.getElementById('ipStat');
+  const cityEl=document.getElementById('ipCurrentCity');
+  const ipEl  =document.getElementById('ipCurrentIP');
+  const duration=2500+Math.random()*1500; // 2.5–4 seconds
+
+  statEl.style.color='var(--amb)';
+  statEl.textContent='⚡ SIGNAL LOST — HACKER DETECTED TRACE!';
+  cityEl.textContent='⚠ REROUTING…';
+  try{SFX.alert();}catch(e){}
+
+  // Rapidly flash scrambled IPs and messages
+  let tick=0;
+  const glitchInt=setInterval(()=>{
+    tick++;
+    ipEl.textContent = tick%2===0 ? '????.????' : rndIP();
+    cityEl.textContent=tick%2===0 ? '⚠ REROUTING…' : '⚡ DECOY DETECTED…';
+  },280);
+
+  setTimeout(()=>{
+    clearInterval(glitchInt);
+    statEl.style.color='';
+    statEl.textContent='✅ Signal restored — resuming trace…';
+    cityEl.textContent='Back on track!';
+    ipEl.textContent='—';
+    setTimeout(()=>onResume(),600);
+  },duration);
 }
 
 function rndIP(){return `${randInt(2,220)}.${randInt(0,254)}.${randInt(0,254)}.${randInt(1,254)}`;}
 
 function endTrace(won,reason){
   const s=GS.ip;if(s.done)return;s.done=true;
-  clearInterval(s.ti);clearInterval(s.hopInt);
+  clearInterval(s.ti); // hopInt removed — only the countdown timer to clear
   stopMapPulse();if(TRACER.animId){cancelAnimationFrame(TRACER.animId);TRACER.animId=null;}
   try{SFX.bgStop();}catch(ex){}
   document.getElementById('ipTrace').style.display='none';
@@ -1108,7 +1142,7 @@ function closePlenary(){
   if(savedId){gcMod(savedId,'scenarioComplete',300);try{setTimeout(()=>VOX.scenarioComplete(),1200);}catch(e){}}
   document.getElementById('btnRefresh').classList.add('pulse-glow');
   GS.debriefModId=null;
-  if(GS.round>=GS.totalRounds){setTimeout(showEndgame,2000);}
+  if(GS.round>=GS.totalRounds&&!GS.queue.length){setTimeout(showEndgame,2000);}
   else{schedAutoAdvance(18000);}
 }
 
