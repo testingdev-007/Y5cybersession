@@ -130,7 +130,8 @@ MODULES.ddos = {
     <p style="margin-top:8px;">Over 10x normal = BLOCK (Red). 3–10x = THROTTLE (Amber). Normal = IGNORE (Green).</p></div>`;
   },
   plenary: {
-    analogy:      '🍕 Like 1,000 pizzas arriving at once that nobody ordered — the street gets blocked and real people can\'t get through.',
+    reportHint: 'This was a network traffic attack — which team looks after the network?',
+    analogy:
     whatHappened: 'Hackers sent thousands of fake visitors to flood our website until it broke.',
     keyMove:      'Over 10× normal = Block. Between 3–10× = Slow it down. Normal = Leave it alone.',
     realWorld:    'Ever tried to load a game or website and it just... wouldn\'t load? Sometimes that\'s a DDoS!',
@@ -225,6 +226,7 @@ MODULES.malware = {
     <p style="margin-top:8px;">Remember: high CPU doesn't always mean malware (Windows Update is legit!). Check the NAME first.</p></div>`;
   },
   plenary: {
+    reportHint: 'Malware is a security incident — which team responds to those?',
     analogy:      '🕵️ Like a spy wearing a school uniform — they look like they belong, but they\'re secretly stealing things.',
     whatHappened: 'Bad software had sneaked onto a computer, hiding inside programs with suspicious or fake names.',
     keyMove:      'Unknown name = Quarantine. Real name but very high CPU = Investigate. Known and normal = Leave it.',
@@ -420,6 +422,7 @@ MODULES.ransomware = {
     <p>Ransomware locks your files using a secret code. The clues: <strong>suspicious new file extensions</strong> (.locked, .encrypted), <strong>very high write operations</strong>, and <strong>lots of files affected</strong>. Watch out for the backup drive edge case — ".bak" on a backup drive is NORMAL!</p></div>`;
   },
   plenary: {
+    reportHint: 'Ransomware is a major emergency — which team handles big security incidents and keeps the business running?',
     analogy:      '🔒 Like someone putting a padlock on your bedroom and saying "pay up if you want your stuff back!"',
     whatHappened: 'Ransomware scrambled files on our drives so nobody could open them, hoping we\'d pay money for the key.',
     keyMove:      'Suspicious extension + lots of files = Isolate the drive fast. Just a few files affected = Investigate. Normal backup activity (.bak) = Leave it.',
@@ -970,6 +973,7 @@ MODULES.phishingModule = {
     </div>`;
   },
   plenary: {
+    reportHint: 'These were fake emails — which team handles email security and teaches people to spot them?',
     analogy:      '🎣 Like a fishing hook with fake bait — the email looks real, but it\'s trying to hook you into giving away your password.',
     whatHappened: 'Fake emails had tiny mistakes in their addresses — a zero instead of an O, an extra word, one wrong letter — designed to trick people into clicking.',
     keyMove:      'Check every character in the address. One wrong letter = fake. If it feels urgent and scary — that\'s on purpose to make you panic and not think.',
