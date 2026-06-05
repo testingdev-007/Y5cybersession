@@ -131,7 +131,7 @@ MODULES.ddos = {
   },
   plenary: {
     reportHint: 'This was a network traffic attack — which team looks after the network?',
-    analogy:
+    analogy:      '🍕 Like 1,000 pizzas arriving at once that nobody ordered — the street gets blocked and real people can\'t get in.',
     whatHappened: 'Hackers sent thousands of fake visitors to flood our website until it broke.',
     keyMove:      'Over 10× normal = Block. Between 3–10× = Slow it down. Normal = Leave it alone.',
     realWorld:    'Ever tried to load a game or website and it just... wouldn\'t load? Sometimes that\'s a DDoS!',
