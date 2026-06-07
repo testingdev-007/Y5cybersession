@@ -180,7 +180,7 @@ function applyAdmin(){
 
 // ── REFRESH INBOX ─────────────────────────────────────────────
 function refreshInbox(){
-  try{SFX.newMail();}catch(e){}try{VOX.newEmail();}catch(e){}clearTimeout(GS.autoTimer);
+  try{SFX.newMail();}catch(e){}/*vox*/clearTimeout(GS.autoTimer);
   document.getElementById('btnRefresh').classList.remove('pulse-glow');
   if(GS.active){toast('Finish your current mission first!','warn');return;}
   // Only show endgame when ALL rounds done AND no exceptions left in queue
@@ -276,7 +276,7 @@ function addToInbox(email){
     el.classList.add('sel');el.classList.remove('unread');
     showEmailPrompt(email);
   },300);
-  if(email.phish){setTimeout(()=>{const e2=pick(PHISHING_EXCEPTION_CHAT.onPhishingArrived);gcMsg(e2.persona,pick(e2.msgs));try{VOX.phishingWarning();}catch(e){}},1800);}
+  if(email.phish){setTimeout(()=>{const e2=pick(PHISHING_EXCEPTION_CHAT.onPhishingArrived);gcMsg(e2.persona,pick(e2.msgs));/*vox*/},1800);}
 }
 
 function showEmailPrompt(email){
@@ -362,12 +362,12 @@ function loadTool(){
     GS.toolOk=true;GS.badTools=0;addXP(10);
     gcMod(GS.modId,'onToolCorrect');
     toast('✓ Correct tool loaded!','ok');
-    try{VOX.toolCorrect();}catch(e){};
+    /*vox*/;
     GS.scenarioRagDone=true;
     renderToolData();setStep(3);
     SFX.correct();
   } else {
-    GS.badTools++;loseH('Wrong tool');addXP(-5);gcMod(GS.modId,'onToolWrong');try{VOX.toolWrong();}catch(e){};
+    GS.badTools++;loseH('Wrong tool');addXP(-5);gcMod(GS.modId,'onToolWrong');/*vox*/;
     const hint=GS.badTools>=2?'<br><br><em>Hint: your email tells you what type of attack it is — which tool matches?</em>':'';
     document.getElementById('toolData').innerHTML=`<div class="terr">✗ <strong>${esc(v)}</strong> isn't the right tool for this.${hint}<br><br>Have another look and try again!</div>`;
   }
@@ -441,8 +441,8 @@ function doAction(rowIdx,actId){
   item.handled=true;
   item.userAction=actId;
   const ao=(actId===item.actionAnswer);
-  if(ao){try{SFX.correct();}catch(e){}try{VOX.correct();}catch(e){}addXP(15);gcMod(GS.modId,'onActionCorrect',200);}
-  else{loseH('Wrong action');addXP(-5);try{VOX.wrong();}catch(e){}gcMod(GS.modId,'onActionWrong',200);}
+  if(ao){try{SFX.correct();}catch(e){}/*vox*/addXP(15);gcMod(GS.modId,'onActionCorrect',200);}
+  else{loseH('Wrong action');addXP(-5);/*vox*/gcMod(GS.modId,'onActionWrong',200);}
   // DDoS graph
   if(GS.modId==='ddos'&&item.graphData)animGraph(item.graphData,item.avgHitsMin,item.currentHitsMin);
   renderToolData();
@@ -488,8 +488,8 @@ function openDebrief(){
 
 // Legacy doReport kept only as internal helper called by plenReport()
 function doReport(ok,correct,savedId){
-  if(ok){try{SFX.correct();}catch(e){}try{VOX.reportCorrect();}catch(e){}addXP(30);gcMod(savedId,'reportCorrect');}
-  else{loseH('Wrong team');addXP(-15);try{VOX.reportWrong();}catch(e){}gcMod(savedId,'reportWrong');}
+  if(ok){try{SFX.correct();}catch(e){}/*vox*/addXP(30);gcMod(savedId,'reportCorrect');}
+  else{loseH('Wrong team');addXP(-15);/*vox*/gcMod(savedId,'reportWrong');}
 }
 
 // ── RESULTS ───────────────────────────────────────────────────
@@ -681,7 +681,7 @@ function startTrace(){
     try{SFX.tick();}catch(ex){}
     if(cd>0){
       document.getElementById('ipCurrentCity').textContent='Get ready — '+cd+'!';
-      try{VOX.ipCountdown(cd);}catch(ex){}
+      /*vox*/
     } else {
       clearInterval(cdInt);
       // NOW start the 60-second countdown
@@ -884,7 +884,7 @@ function presentHopChallenge(hopIdx){
   s.waitingForAnswer=true;s.currentChallengeHop=hopIdx;
   s.hopStartTime=Date.now(); // track when this challenge was shown (for glitch mechanic)
   const isFinal=(hopIdx===s.hops.length-1);
-  try{ isFinal ? VOX.ipFinal(hop.city,hop.country) : VOX.ipHop(hop.city,hop.country); }catch(ex){}
+  
 
   // IP always shown in fixed box — never on map
   document.getElementById('ipCurrentIP').textContent=hop.ip;
@@ -920,7 +920,7 @@ function handleHopAnswer(correct,hop,isFinal){
   }
 
   s.waitingForAnswer=false;
-  try{SFX.correct();}catch(ex){}try{VOX.ipCorrectHop();}catch(ex){}
+  try{SFX.correct();}catch(ex){}/*vox*/
 
   if(isFinal){
     clearInterval(s.ti);
@@ -976,18 +976,18 @@ function endTrace(won,reason){
   document.getElementById('ipTrace').style.display='none';
   document.getElementById('ipResult').style.display='';
   if(won){
-    try{SFX.win();}catch(ex){}try{VOX.ipWin();}catch(ex){}addXP(50);
+    try{SFX.win();}catch(ex){}/*vox*/addXP(50);
     document.getElementById('ipResultInner').innerHTML=`<div class="iprwin">✓ HACKER LOCKED OUT!</div><div class="iprsub">Every IP confirmed. Machine isolated!<br>Outstanding work, Agent! 🏆</div>`;
     const e=pick(IP_TRACE_CHAT.onWin);gcMsg(e.persona,pick(e.msgs),600);
   } else {
-    try{SFX.lose();}catch(ex){}try{VOX.ipLose(reason);}catch(ex){}
+    try{SFX.lose();}catch(ex){}/*vox*/
     document.getElementById('ipResultInner').innerHTML=`<div class="iprlose">✗ TRACE FAILED</div><div class="iprsub">${esc(reason||'The hacker escaped.')}<br>Keep practising!</div>`;
     const e=pick(IP_TRACE_CHAT.onLose);gcMsg(e.persona,pick(e.msgs),600);
   }
 }
 
 function closeIPTrace(){
-  try{VOX.cancel();}catch(e){}stopMapPulse();if(TRACER.animId){cancelAnimationFrame(TRACER.animId);TRACER.animId=null;}
+  /*vox*/stopMapPulse();if(TRACER.animId){cancelAnimationFrame(TRACER.animId);TRACER.animId=null;}
   try{SFX.bgStop();}catch(ex){}
   document.getElementById('ipOverlay').classList.remove('open');
   document.body.classList.remove('alert-mode');
@@ -1011,7 +1011,7 @@ function gcMsg(pId,msg,delay=0){
     w.innerHTML=`<div class="chdr"><span class="cname">${p.name}</span><span class="ctime">${t}</span></div><div class="cbub">${esc(msg)}</div>`;
     const box=document.getElementById('chatMsgs');box.appendChild(w);box.scrollTop=box.scrollHeight;
     try{SFX.chatPing();}catch(e){}
-    try{VOX.chat(pId,msg);}catch(e){}
+    /*vox*/
   },delay);
 }
 
@@ -1139,7 +1139,7 @@ function checkPlenComplete(){
 function closePlenary(){
   const savedId=GS.debriefModId;
   document.getElementById('plenaryModal').classList.remove('open');
-  if(savedId){gcMod(savedId,'scenarioComplete',300);try{setTimeout(()=>VOX.scenarioComplete(),1200);}catch(e){}}
+  if(savedId){gcMod(savedId,'scenarioComplete',300);}
   document.getElementById('btnRefresh').classList.add('pulse-glow');
   GS.debriefModId=null;
   if(GS.round>=GS.totalRounds&&!GS.queue.length){setTimeout(showEndgame,2000);}
@@ -1157,11 +1157,11 @@ function showEndgame(){
     <div class="srow" style="border:none;padding-top:10px;"><span>Your Rating</span><span style="color:var(--cyn);font-family:'Orbitron',monospace;font-size:15px;">${g}</span></div>
     <p style="font-size:14px;margin-top:14px;text-align:center;opacity:.6;line-height:2;">Every game is different — new attacks every time!</p>`;
   document.getElementById('endOverlay').classList.add('open');
-  try{VOX.sessionComplete();}catch(e){};
+  /*vox*/;
 }
 
 function resetAll(){
-  try{VOX.cancel();}catch(e){}clearTimeout(GS.autoTimer);clearTimeout(GS.stuckTimer);
+  /*vox*/clearTimeout(GS.autoTimer);clearTimeout(GS.stuckTimer);
   document.getElementById('endOverlay').classList.remove('open');
   document.getElementById('ipOverlay').classList.remove('open');
   document.getElementById('plenaryModal').classList.remove('open');
@@ -1180,15 +1180,6 @@ function resetAll(){
   document.getElementById('btnRefresh').classList.add('pulse-glow');
   gcMsg('zara', pick(GENERAL_GROUP_CHAT.welcome[0].msgs),600);
   gcMsg('marcus',pick(GENERAL_GROUP_CHAT.welcome[1].msgs),4000);
-}
-
-// ── VOICE TOGGLE ──────────────────────────────────────────────
-function toggleVoice(){
-  try{
-    const on=VOX.toggle();
-    const btn=document.getElementById('voxBtn');
-    if(btn){btn.textContent=on?'🔊 VOICE ON':'🔇 VOICE OFF';btn.classList.toggle('off',!on);}
-  }catch(e){}
 }
 
 // ── UTILS ─────────────────────────────────────────────────────
