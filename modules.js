@@ -192,7 +192,7 @@ MODULES.malware = {
       if (!proc.legitimate) {
         if (proc.edgeCase === 'lookalike') {
           ragAnswer = 'R'; actionAnswer = 'quarantine';
-          notes = `Look very carefully at this name 👀`;
+          notes = `Not recognised in the standard program list.`;
         } else if (proc.edgeCase === 'lowCpuBad') {
           ragAnswer = 'R'; actionAnswer = 'quarantine';
           notes = `Not a known Windows program. CPU is low — but the name gives it away.`;
@@ -202,13 +202,13 @@ MODULES.malware = {
         }
       } else if (proc.edgeCase === 'highCpuLegit') {
         ragAnswer = 'G'; actionAnswer = 'ignore';
-        notes = `Windows Update — uses lots of power when updating. ✓`;
+        notes = `Windows Update.`;
       } else if (cpu > 70 && proc.legitimate) {
         ragAnswer = 'A'; actionAnswer = 'investigate';
         notes = `Real program but CPU is quite high right now (${cpu.toFixed(1)}%).`;
       } else {
         ragAnswer = 'G'; actionAnswer = 'ignore';
-        notes = `Known Windows program, running normally.`;
+        notes = `Known Windows program.`;
       }
 
       return {
@@ -378,7 +378,7 @@ MODULES.ransomware = {
         newExtensions  = '.bak';
         writeOpsMin    = randInt(600, 3500);
         ragAnswer      = 'G'; actionAnswer = 'ignore';
-        notes          = `Backup drive running its nightly job. ".bak" means backup copy. ✓`;
+        notes          = `Extension: .bak`;
       } else if (isAttacked && isFront) {
         const isEarlyStage = Math.random() > 0.5;
         if (isEarlyStage) {
@@ -405,7 +405,7 @@ MODULES.ransomware = {
         newExtensions  = 'None';
         writeOpsMin    = randInt(5, 55);
         ragAnswer      = 'G'; actionAnswer = 'ignore';
-        notes          = `Normal file activity. No unusual extensions.`;
+        notes          = ``;  // no note — data shown in columns
       }
 
       return {
@@ -961,7 +961,7 @@ MODULES.phishingModule = {
       isPhish:      e.phishing,
       ragAnswer:    e.phishing ? 'R' : 'G',
       actionAnswer: e.phishing ? 'report' : 'ignore',
-      notes:        e.phishing ? `Check this address very carefully 👀` : `Address looks correct ✓`,
+      notes:        ``,  // no note — child reads the FROM address directly
       handled:false, userRag:null, userAction:null,
     }));
   },
@@ -1067,7 +1067,7 @@ MODULES.bruteForce = {
         sourceIPs      = randInt(3, 45);
         intervalMs     = 'Varied';
         ragAnswer = 'G'; actionAnswer = 'ignore';
-        notes = `${attemptsPerMin}/min across ${sourceIPs} different devices — just normal mistypes.`;
+        notes = `${attemptsPerMin}/min across ${sourceIPs} devices.`;
 
       } else if (isCompromised) {
         // Locked — then someone got in
@@ -1093,7 +1093,7 @@ MODULES.bruteForce = {
         intervalMs     = `~${interval}ms`;
         if (attemptsPerMin > 400 || sourceIPs === 1) {
           ragAnswer = 'R'; actionAnswer = 'lockAccount';
-          notes = `${attemptsPerMin.toLocaleString()}/min from ${sourceIPs === 1 ? 'just 1 computer' : sourceIPs+' computers'} — every ~${interval}ms, very systematic.`;
+          notes = `${attemptsPerMin.toLocaleString()}/min from ${sourceIPs === 1 ? '1 computer' : sourceIPs+' computers'}, every ~${interval}ms.`;
         } else {
           ragAnswer = 'A'; actionAnswer = 'investigate';
           notes = `${attemptsPerMin.toLocaleString()}/min from ${sourceIPs} computers — attempts every ${interval}ms, looks robotic.`;

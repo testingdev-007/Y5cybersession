@@ -27,11 +27,14 @@ const GS = {
   autoTimer:null,
   stuckTimer:null, stuckStep:0,
   pendingEmail:null,
-  // Plenary / debrief state — isolated from active module
+  // Plenary / debrief state
   debriefModId:null,
   plenReportDone:false,
   plenQuizAnswered:0,
   plenQuizTotal:0,
+  // Session tracking for gamification (reset on resetAll, NOT on page reload)
+  quizCorrect:0, quizTotal:0,
+  phishReported:false, ipWon:false, livesLost:0,
 };
 
 function uid(){return Math.random().toString(36).substr(2,8).toUpperCase();}
@@ -108,7 +111,7 @@ function rHearts(){
   const el=document.getElementById('heartsEl');el.innerHTML='';
   for(let i=0;i<GS.maxH;i++){const s=document.createElement('span');s.className='heart'+(i>=GS.hearts?' lost':'');s.textContent='❤';el.appendChild(s);}
 }
-function loseH(why){try{SFX.wrong();}catch(e){}if(GS.hearts<=1){toast('Hanging on!','bad');return;}GS.hearts=Math.max(1,GS.hearts-1);rHearts();toast('-1 ❤  '+why,'bad');}
+function loseH(why){try{SFX.wrong();}catch(e){}GS.livesLost=(GS.livesLost||0)+1;if(GS.hearts<=1){toast('Hanging on!','bad');return;}GS.hearts=Math.max(1,GS.hearts-1);rHearts();toast('-1 ❤  '+why,'bad');}
 function rXP(){document.getElementById('xpNum').textContent=GS.xp;document.getElementById('xpFill').style.width=Math.min(100,(GS.xp/500)*100)+'%';}
 function addXP(n){if(!n)return;GS.xp=Math.max(0,GS.xp+n);rXP();toast(n>0?'+'+n+' XP ✦':n+' XP',n>0?'ok':'bad');}
 function rRound(){document.getElementById('roundNum').textContent=GS.round+'/'+GS.totalRounds;}
@@ -221,9 +224,10 @@ function schedAutoAdvance(delay=18000){
 // ── LOAD MODULE ───────────────────────────────────────────────
 function loadModule(id){
   const mod=MODULES[id];if(!mod)return;
-  // Guard: close any stale plenary from previous round
+  // Guard: close any stale plenary, clear chat for fresh mission
   document.getElementById('plenaryModal').classList.remove('open');
   GS.debriefModId=null;GS.plenReportDone=false;GS.plenQuizAnswered=0;GS.plenQuizTotal=0;
+  document.getElementById('chatMsgs').innerHTML='';
   GS.round++;rRound();  // only real modules count
   GS.modId=id;GS.correctTool=mod.tools.correct;GS.toolOk=false;
   GS.reportReady=false;GS.badTools=0;GS.active=true;
@@ -255,55 +259,37 @@ function addToInbox(email){
   const el=document.createElement('div');
   el.className='eitem unread'+(email.phish?' phish':'');
   el.dataset.eid=email.id;
-  el.innerHTML=`
-    <div class="ef">${esc(email.sender)}</div>
-    <div class="es">${esc(email.subject)}</div>
-    <div class="et">Just now</div>
-    <div class="ebtns">
-      <button class="btn btn-g btn-sm" onclick="doEmail(${email.id},'open',event)">📂 Open</button>
-      <button class="btn btn-r btn-sm" onclick="doEmail(${email.id},'report',event)">🚩 Report</button>
-    </div>`;
-  el.addEventListener('click',e=>{
-    if(e.target.tagName==='BUTTON')return;
-    if(el.classList.contains('done'))return;
-    document.querySelectorAll('.eitem').forEach(i=>i.classList.remove('sel'));
-    el.classList.add('sel');el.classList.remove('unread');
-    showEmailPrompt(email);
-  });
+  if(email.phish){
+    // Phishing exception: action buttons ON the inbox item — no email pane prompt
+    el.innerHTML=`
+      <div class="ef">${esc(email.sender)}</div>
+      <div class="es">${esc(email.subject)}</div>
+      <div class="et">Just now</div>
+      <div class="ebtns">
+        <button class="btn btn-r btn-sm" onclick="doEmail(${email.id},'open',event)">📂 Open it</button>
+        <button class="btn btn-g btn-sm" onclick="doEmail(${email.id},'report',event)">🚩 Report it</button>
+      </div>`;
+    setTimeout(()=>{const e2=pick(PHISHING_EXCEPTION_CHAT.onPhishingArrived);gcMsg(e2.persona,pick(e2.msgs));},1800);
+  } else {
+    // Regular email: click to read in the email pane
+    el.innerHTML=`
+      <div class="ef">${esc(email.sender)}</div>
+      <div class="es">${esc(email.subject)}</div>
+      <div class="et">Just now</div>`;
+    el.addEventListener('click',()=>{
+      if(el.classList.contains('done'))return;
+      document.querySelectorAll('.eitem').forEach(i=>i.classList.remove('sel'));
+      el.classList.add('sel');el.classList.remove('unread');
+      showEmailContent(email);setStep(2);
+    });
+    // Auto-open so the child sees the email content right away
+    setTimeout(()=>{
+      document.querySelectorAll('.eitem').forEach(i=>i.classList.remove('sel'));
+      el.classList.add('sel');el.classList.remove('unread');
+      showEmailContent(email);
+    },400);
+  }
   list.insertBefore(el,list.firstChild);
-  setTimeout(()=>{
-    document.querySelectorAll('.eitem').forEach(i=>i.classList.remove('sel'));
-    el.classList.add('sel');el.classList.remove('unread');
-    showEmailPrompt(email);
-  },300);
-  if(email.phish){setTimeout(()=>{const e2=pick(PHISHING_EXCEPTION_CHAT.onPhishingArrived);gcMsg(e2.persona,pick(e2.msgs));/*vox*/},1800);}
-}
-
-function showEmailPrompt(email){
-  document.getElementById('welcomeMsg').style.display='none';
-  const v=document.getElementById('emailView');v.style.display='block';
-  v.innerHTML=`
-    <div class="evmeta">
-      <div class="evlbl">FROM</div>
-      <div class="evval ${email.phish?'cR':''}">${esc(email.sender)}</div>
-      <div class="evlbl">SUBJECT</div>
-      <div class="evval evbig">${esc(email.subject)}</div>
-    </div>
-    <div class="email-decision-box">
-      <div class="edb-question">⚠ What do you want to do with this email?</div>
-      <div class="edb-hint">👀 Look carefully at who sent it before you decide!</div>
-      <div class="edb-btns">
-        <button class="edb-btn edb-open"   onclick="doEmail(${email.id},'open',event)">
-          <div class="edb-icon">📂</div><div class="edb-label">OPEN IT</div>
-          <div class="edb-desc">Read it and start your investigation</div>
-        </button>
-        <button class="edb-btn edb-report" onclick="doEmail(${email.id},'report',event)">
-          <div class="edb-icon">🚩</div><div class="edb-label">REPORT IT</div>
-          <div class="edb-desc">It looks suspicious — flag it!</div>
-        </button>
-      </div>
-    </div>`;
-  showTab('E');
 }
 
 function showEmailContent(email){
@@ -334,6 +320,7 @@ function doEmail(id,action,evt){
       addXP(30);
       const e=pick(PHISHING_EXCEPTION_CHAT.onReported);gcMsg(e.persona,pick(e.msgs));
       toast('✓ Great spotting — fake email reported!','ok');
+      GS.phishReported=true;
       const v=document.getElementById('emailView');v.style.display='block';
       v.innerHTML=`<div class="evmeta"><div class="evlbl">RESULT</div><div class="evval cG">✓ Fake email caught! 🎯</div></div>
         <div class="evbody">You spotted the fake address and reported it — exactly right!\n\nFake emails use tricks like:\n• Letters swapped for numbers (paypa1.com)\n• Wrong domain (company.helpdesk.xyz)\n• Scary urgent language to make you panic\n\nAlways check before you click!</div>`;
@@ -472,18 +459,15 @@ function renderDebriefButton(){
 
 // Opened by child clicking the debrief button — captures modId RIGHT NOW, no timer race
 function openDebrief(){
-  const savedId=GS.modId; // captured at click time — immune to subsequent module loads
+  const savedId=GS.modId;
+  const savedScenario=GS.scenario?[...GS.scenario]:[];
   GS.debriefModId=savedId;
   GS.plenReportDone=false;GS.plenQuizAnswered=0;
-  // Show results in background tab
   showResults(savedId);
-  // Mark email done
   const emailEl=document.querySelector('.eitem.sel');
   if(emailEl){emailEl.classList.add('done');emailEl.classList.remove('sel','unread');}
-  // Clean up game state
   GS.active=false;setSim('READY');setStep(0);clearGlows();
-  // Open plenary — this is now synchronous and explicit
-  showPlenary(savedId);
+  showPlenary(savedId,savedScenario);
 }
 
 // Legacy doReport kept only as internal helper called by plenReport()
@@ -977,6 +961,7 @@ function endTrace(won,reason){
   document.getElementById('ipResult').style.display='';
   if(won){
     try{SFX.win();}catch(ex){}/*vox*/addXP(50);
+    GS.ipWon=true;
     document.getElementById('ipResultInner').innerHTML=`<div class="iprwin">✓ HACKER LOCKED OUT!</div><div class="iprsub">Every IP confirmed. Machine isolated!<br>Outstanding work, Agent! 🏆</div>`;
     const e=pick(IP_TRACE_CHAT.onWin);gcMsg(e.persona,pick(e.msgs),600);
   } else {
@@ -1043,36 +1028,50 @@ function gcMod(modId,key,delay=400){
 // ── SC BRIDGE REMOVED — stubs in setStep section ───────────────
 
 // ── PLENARY MODAL ─────────────────────────────────────────────
-// Called by openDebrief() with a frozen savedId — explicit button click, no timer race
-function showPlenary(savedId){
+function showPlenary(savedId,savedScenario){
   const mod=MODULES[savedId];if(!mod||!mod.plenary)return schedAutoAdvance(20000);
   const pl=mod.plenary;
-  const narrators=['Marcus broke it down:','Priya\'s take:','Zara\'s debrief:','Your team\'s verdict:'];
-  document.getElementById('plenTitle').textContent='🔍 '+esc(mod.name)+' — DEBRIEF';
-  let html=`<div style="font-size:13px;color:rgba(0,255,65,.5);margin-bottom:16px;">${pick(narrators)}</div>`;
-  if(pl.analogy){html+=`<div class="plen-section"><div style="font-size:20px;margin-bottom:8px;">${pl.analogy}</div></div>`;}
-  if(pl.whatHappened){html+=`<div class="plen-section"><h3>⚡ WHAT HAPPENED</h3><p>${pl.whatHappened}</p></div>`;}
-  if(pl.keyMove){html+=`<div class="plen-section"><h3>🎯 THE KEY RULE</h3><p>${pl.keyMove}</p></div>`;}
-  if(pl.realWorld){html+=`<div class="plen-section"><h3>🏠 YOUR WORLD</h3><p>${pl.realWorld}</p></div>`;}
+  const allClear=savedScenario&&savedScenario.every(s=>s.ragAnswer==='G');
+
+  // ── Phase 1: punchy debrief ─────────────────────────────────
+  const narrators=['Marcus:','Priya:','Zara:','The team:'];
+  document.getElementById('plenTitle').textContent='🔍 DEBRIEF — '+mod.name;
+  document.getElementById('plenPhase1').style.display='block';
+  document.getElementById('plenPhase2').style.display='none';
+  document.getElementById('plenContinue').style.display='none';
+  document.getElementById('plenToQuiz').style.display='none';
+
+  // Build debrief content — very short, emoji-forward
+  let html=`<div style="font-size:12px;color:rgba(0,255,65,.4);margin-bottom:12px;">${pick(narrators)}</div>`;
+  if(pl.analogy){html+=`<div class="plen-analogy">${pl.analogy}</div>`;}
+  if(pl.whatHappened){html+=`<div class="plen-fact"><span class="plen-icon">⚡</span><span>${pl.whatHappened}</span></div>`;}
+  if(pl.keyMove){html+=`<div class="plen-fact"><span class="plen-icon">🎯</span><span>${pl.keyMove}</span></div>`;}
+  if(pl.realWorld){html+=`<div class="plen-fact"><span class="plen-icon">🏠</span><span>${pl.realWorld}</span></div>`;}
   document.getElementById('plenContent').innerHTML=html;
 
-  // ── Report question — always first, quiz hidden until answered ─
-  const teams=shuffle([mod.reportTeams.correct,mod.reportTeams.incorrect]);
-  const hint=mod.reportHint||'Think about what type of attack this was — which team handles that?';
-  let qHtml=`<div class="pq" id="pq_report">
-    <div class="pq-q">📋 Who should this report go to?</div>
-    <div class="pq-hint">${esc(hint)}</div>
-    <div class="pq-opts">`;
-  teams.forEach(t=>{
-    qHtml+=`<button class="pq-opt pq-report-opt" data-team="${escA(t)}" onclick="plenReport('${escA(t)}','${escA(mod.reportTeams.correct)}','${escA(savedId)}')">${esc(t)}</button>`;
-  });
-  qHtml+=`</div><div class="pq-result" id="pqr_report"></div></div>`;
+  // ── Report question (suppressed if all-clear) ───────────────
+  if(allClear){
+    GS.plenReportDone=true;
+    document.getElementById('plenReport').innerHTML=`<div class="plen-allclear">✅ All clear this time — no issues found, no report needed!</div>`;
+    document.getElementById('plenToQuiz').style.display='block';
+  } else {
+    const teams=shuffle([mod.reportTeams.correct,mod.reportTeams.incorrect]);
+    const hint=mod.reportHint||'Think about what type of attack this was.';
+    let rHtml=`<div class="plen-report-q">
+      <div class="pq-q">📋 Who gets this report?</div>
+      <div class="pq-hint">${esc(hint)}</div>
+      <div class="pq-opts">`;
+    teams.forEach(t=>{
+      rHtml+=`<button class="pq-opt pq-report-opt" data-team="${escA(t)}" onclick="plenReport('${escA(t)}','${escA(mod.reportTeams.correct)}','${escA(savedId)}')">${esc(t)}</button>`;
+    });
+    rHtml+=`</div><div class="pq-result" id="pqr_report"></div></div>`;
+    document.getElementById('plenReport').innerHTML=rHtml;
+  }
 
-  // ── Knowledge quiz — hidden behind a gate, revealed after report answered ─
+  // ── Phase 2: quiz ───────────────────────────────────────────
   if(pl.quiz&&pl.quiz.length){
     GS.plenQuizTotal=pl.quiz.length;
-    qHtml+=`<div id="plen-quiz-gate" style="display:none;">
-      <h3 style="font-family:'Orbitron',monospace;font-size:13px;color:var(--amb);letter-spacing:2px;margin:16px 0 12px;">🧠 QUICK QUIZ</h3>`;
+    let qHtml='';
     pl.quiz.forEach((q,qi)=>{
       qHtml+=`<div class="pq" id="pq${qi}"><div class="pq-q">${q.q}</div><div class="pq-opts">`;
       q.options.forEach((opt,oi)=>{
@@ -1080,12 +1079,18 @@ function showPlenary(savedId){
       });
       qHtml+=`</div><div class="pq-result" id="pqr${qi}"></div></div>`;
     });
-    qHtml+=`</div>`;
+    document.getElementById('plenQuiz').innerHTML=qHtml;
   } else { GS.plenQuizTotal=0; }
 
-  document.getElementById('plenQuiz').innerHTML=qHtml;
-  document.getElementById('plenContinue').style.display='none';
   document.getElementById('plenaryModal').classList.add('open');
+}
+
+// Called when child has finished phase 1 (report answered or all-clear)
+function plenPhase2(){
+  document.getElementById('plenPhase1').style.display='none';
+  document.getElementById('plenPhase2').style.display='block';
+  document.querySelector('.plen-box').scrollTop=0;
+  if(GS.plenQuizTotal===0)document.getElementById('plenContinue').style.display='block';
 }
 
 // Report question answered in plenary — unlocks the quiz
@@ -1105,21 +1110,21 @@ function plenReport(chosen,correct,savedId){
   const slot=document.getElementById('reportResultSlot');
   if(slot)slot.innerHTML=`<div class="rc ${ok?'ok':'bad'}" style="margin-top:8px;"><h3>${ok?'✓':'✗'} Report ${ok?'to right team':'wrong team'}</h3><p>Correct: <strong>${esc(correct)}</strong></p></div>`;
   GS.plenReportDone=true;
-  // Reveal quiz now
-  const gate=document.getElementById('plen-quiz-gate');
-  if(gate){gate.style.display='block';}
-  if(GS.plenQuizTotal===0)checkPlenComplete();
+  // Show "Quiz Time" button — child moves to phase 2 when ready
+  document.getElementById('plenToQuiz').style.display='block';
 }
 
-// Knowledge quiz answer
 function plenAnswer(qi,oi,correct){
   const opts=document.querySelectorAll(`#pq${qi} .pq-opt`);
   opts.forEach(b=>b.disabled=true);
   const r=document.getElementById('pqr'+qi);
+  GS.quizTotal=(GS.quizTotal||0)+1;
   if(oi===correct){
     opts[oi].classList.add('correct');
     r.textContent='✓ Correct!';r.className='pq-result ok';
     try{SFX.correct();}catch(e){}
+    addXP(15);
+    GS.quizCorrect=(GS.quizCorrect||0)+1;
   } else {
     opts[oi].classList.add('wrong');opts[correct].classList.add('correct');
     r.textContent='Answer shown above in green.';r.className='pq-result bad';
@@ -1129,9 +1134,8 @@ function plenAnswer(qi,oi,correct){
   checkPlenComplete();
 }
 
-// Unlocks Continue only when report + all quiz answered
 function checkPlenComplete(){
-  if(GS.plenReportDone&&(GS.plenQuizAnswered>=(GS.plenQuizTotal||0))){
+  if(GS.plenQuizAnswered>=(GS.plenQuizTotal||0)){
     setTimeout(()=>{document.getElementById('plenContinue').style.display='block';},600);
   }
 }
@@ -1146,31 +1150,21 @@ function closePlenary(){
   else{schedAutoAdvance(18000);}
 }
 
-// ── ENDGAME ───────────────────────────────────────────────────
-function showEndgame(){
-  const pct=Math.min(100,Math.round((GS.xp/500)*100));
-  const g=pct>=90?'⭐ SUPER AGENT! Outstanding!':pct>=70?'🏆 GREAT WORK! Really impressive!':pct>=50?'👍 GOOD JOB! Keep practising!':'🎮 NICE TRY! Have another go!';
-  document.getElementById('endContent').innerHTML=`
-    <div class="srow"><span>XP Earned</span><span style="color:var(--g);text-shadow:0 0 8px var(--g)">${GS.xp}</span></div>
-    <div class="srow"><span>Lives Left</span><span>${'❤'.repeat(Math.max(0,GS.hearts))}${'🖤'.repeat(Math.max(0,GS.maxH-GS.hearts))}</span></div>
-    <div class="srow"><span>Missions Done</span><span>${GS.round}</span></div>
-    <div class="srow" style="border:none;padding-top:10px;"><span>Your Rating</span><span style="color:var(--cyn);font-family:'Orbitron',monospace;font-size:15px;">${g}</span></div>
-    <p style="font-size:14px;margin-top:14px;text-align:center;opacity:.6;line-height:2;">Every game is different — new attacks every time!</p>`;
-  document.getElementById('endOverlay').classList.add('open');
-  /*vox*/;
-}
+// ── ENDGAME — delegates to gamification.js ────────────────────
+function showEndgame(){ showEndSplash(); }
 
 function resetAll(){
   /*vox*/clearTimeout(GS.autoTimer);clearTimeout(GS.stuckTimer);
-  document.getElementById('endOverlay').classList.remove('open');
+  document.getElementById('endSplash').classList.remove('open');
   document.getElementById('ipOverlay').classList.remove('open');
   document.getElementById('plenaryModal').classList.remove('open');
   document.body.classList.remove('alert-mode');
-  Object.assign(GS,{hearts:GS.maxH,xp:0,round:0,modId:null,scenario:null,correctTool:null,toolOk:false,reportReady:false,active:false,phishDone:false,ipDone:false,queue:[],forceMod:null,badTools:0,sessId:uid(),scenarioRagDone:true,ip:{},gfr:null,autoTimer:null,stuckTimer:null,stuckStep:0,pendingEmail:null,debriefModId:null,plenReportDone:false,plenQuizAnswered:0,plenQuizTotal:0});
+  Object.assign(GS,{hearts:GS.maxH,xp:0,round:0,modId:null,scenario:null,correctTool:null,toolOk:false,reportReady:false,active:false,phishDone:false,ipDone:false,queue:[],forceMod:null,badTools:0,sessId:uid(),scenarioRagDone:true,ip:{},gfr:null,autoTimer:null,stuckTimer:null,stuckStep:0,pendingEmail:null,debriefModId:null,plenReportDone:false,plenQuizAnswered:0,plenQuizTotal:0,quizCorrect:0,quizTotal:0,phishReported:false,ipWon:false,livesLost:0});
   rHearts();rXP();rRound();
   document.getElementById('ilist').innerHTML=`<div id="ilistEmpty" style="padding:16px;font-size:15px;color:rgba(0,255,65,.35);text-align:center;line-height:2.4;">No emails yet!<br><span style="color:var(--g);font-size:14px;">👆 Click the green button<br>above to start!</span></div>`;
-  document.getElementById('welcomeMsg').style.display='flex';document.getElementById('emailView').style.display='none';
-  document.getElementById('resultsView').innerHTML='Your results will show here after each mission.';
+  document.getElementById('welcomeMsg').style.display='block';document.getElementById('emailView').style.display='none';
+  document.getElementById('resultsView').innerHTML='Results appear here after each mission.';
+  document.getElementById('chatMsgs').innerHTML='';
   resetTool();clearGlows();
   document.getElementById('toolSel').innerHTML='<option value="">— Choose your investigation tool —</option>';
   document.getElementById('scenProg').textContent='';
