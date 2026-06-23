@@ -1,15 +1,35 @@
+/* ════════════════════════════════════════════════════════════
+   CYBERSHIELD ACADEMY
+   FILE: modules_2026-06-10_v11.js
+   ROLE: modules.js
+   ════════════════════════════════════════════════════════════ */
 // ============================================================
 // MODULES.JS — CyberShield Academy Simulation Modules
 // ============================================================
 
-const MODULES = {};
+var MODULES = {};
 
 // ── Utility: seeded random helpers ──────────────────────────
 function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 function randFloat(min, max, dp=1) { return parseFloat((Math.random() * (max - min) + min).toFixed(dp)); }
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
 function jitter(base, pct=0.15) { return Math.round(base * (1 + (Math.random()-0.5)*pct*2)); }
+
+// ── SCENARIO UTILITY ─────────────────────────────────────────
+function buildRagProfile(type,count){
+  if(!count)return[];
+  const base={'RED_RED':['R','R','R','R'],'RED_AMBER':['R','A','A','A'],'AMBER_AMBER':['A','A','A','A'],'RED_RED_AMBER':['R','R','A','A'],'RED_AMBER_AMBER':['R','A','A','A'],'RED_RED_RED':['R','R','R','R']}[type]||['R','A'];
+  const out=[];for(let i=0;i<count;i++)out.push(base[Math.min(i,base.length-1)]);
+  return out;
+}
 
 // ─────────────────────────────────────────────────────────────
 // MODULE 1: DDoS ATTACK
@@ -31,78 +51,28 @@ MODULES.ddos = {
     correct: 'Network Traffic Monitor',
     decoys: ['Password Audit Tool','Email Header Analyser','DNS Lookup Tool','System Log Viewer','Firewall Rules Editor']
   },
-  generateScenario() {
-    const services = [
-      { name: 'Homepage', purpose: 'Main website people visit first' },
-      { name: 'Login Page', purpose: 'Where people type their username and password' },
-      { name: 'Image Loader', purpose: 'Sends pictures to the website' },
-      { name: 'Search Bar', purpose: 'Lets people search for things' },
-      { name: 'Shop Checkout', purpose: 'Where people pay for things' },
-      { name: 'Admin Area', purpose: 'Secret area only staff can use' },
-      { name: 'Video Stream', purpose: 'Plays videos on the site' },
+    generateScenario(params={}) {
+    const {numEscalations=pick([1,2,2,2,3]),escalationType=pick(['RED_AMBER','RED_AMBER','RED_RED','AMBER_AMBER']),includeEdgeCase=Math.random()>.3,numItems=6}=params;
+    const pool=[
+      {name:'Homepage',     purpose:'Main website people visit first'},
+      {name:'Login Page',   purpose:'Where people sign in'},
+      {name:'Image Loader', purpose:'Loads pictures and videos'},
+      {name:'Search Bar',   purpose:'Lets people search the site'},
+      {name:'Shop Checkout',purpose:'Where people pay for things'},
+      {name:'Admin Area',   purpose:'Staff-only management area'},
+      {name:'Video Stream', purpose:'Plays videos on the website'},
+      {name:'API Gateway',  purpose:'Connects apps to the website'},
+      {name:'CDN Server',   purpose:'Delivers images and files fast'},
     ];
-    const chosen = shuffle(services).slice(0, 5);
-    // Attack types — now with a 'productLaunch' edge case:
-    // productLaunch = traffic looks high but it IS a real busy period — GREEN
-    // Edge case: a service at exactly 10x (boundary!) — AMBER not RED
-    // clean = all normal
-    const attackType = pick(['volumetric','stealth','multi-vector','productLaunch','clean']);
-    return chosen.map((svc, i) => {
-      const baseline = randInt(150, 600);
-      let current, ragAnswer, actionAnswer, notes;
-
-      if (attackType === 'productLaunch') {
-        if (i === 0) {
-          const mult = randFloat(2.1, 2.8, 1);
-          current = Math.round(baseline * mult);
-          ragAnswer = 'A'; actionAnswer = 'throttle';
-          notes = `${mult}× the usual amount — above the warning level, even with today's product launch.`;
-        } else {
-          current = jitter(baseline, 0.15);
-          ragAnswer = 'G'; actionAnswer = 'ignore';
-          notes = `${Math.round(current).toLocaleString()}/min — close to the ${baseline.toLocaleString()}/min average.`;
-        }
-      } else if (attackType === 'clean') {
-        current = jitter(baseline, 0.1);
-        ragAnswer = 'G'; actionAnswer = 'ignore';
-        notes = `${Math.round(current).toLocaleString()}/min — close to the ${baseline.toLocaleString()}/min average.`;
-      } else if (attackType === 'volumetric' && i === 0) {
-        const mult = randInt(13, 35);
-        current = baseline * mult;
-        ragAnswer = 'R'; actionAnswer = 'block';
-        notes = `${mult}× higher than normal right now.`;
-      } else if (attackType === 'stealth' && i < 2) {
-        const isBoundary = (i === 1);
-        const mult = isBoundary ? randFloat(3.0, 3.4, 1) : randFloat(4.5, 8.0, 1);
-        current = Math.round(baseline * mult);
-        ragAnswer = 'A'; actionAnswer = 'throttle';
-        notes = isBoundary
-          ? `${mult}× the usual amount — just above the warning level.`
-          : `${mult}× the usual amount right now.`;
-      } else if (attackType === 'multi-vector' && i < 3) {
-        if (i === 0) {
-          const mult = randInt(11, 22);
-          current = baseline * mult;
-          ragAnswer = 'R'; actionAnswer = 'block';
-          notes = `${mult}× higher than normal — main spike.`;
-        } else {
-          const mult = randFloat(3.5, 7.0, 1);
-          current = Math.round(baseline * mult);
-          ragAnswer = 'A'; actionAnswer = 'throttle';
-          notes = `${mult}× the usual amount.`;
-        }
-      } else {
-        current = jitter(baseline, 0.1);
-        ragAnswer = 'G'; actionAnswer = 'ignore';
-        notes = `${Math.round(current).toLocaleString()}/min — close to the ${baseline.toLocaleString()}/min average.`;
-      }
-      return {
-        name: svc.name, purpose: svc.purpose,
-        avgHitsMin: baseline, currentHitsMin: Math.round(current),
-        ragAnswer, actionAnswer, notes,
-        handled: false, userRag: null, userAction: null,
-        graphData: this._generateGraphHistory(baseline, Math.round(current))
-      };
+    const chosen=shuffle(pool).slice(0,numItems);
+    const rag=buildRagProfile(escalationType,numEscalations);
+    const edgeAt=includeEdgeCase?numEscalations:-1;
+    return chosen.map((svc,i)=>{
+      const base=randInt(150,600);
+      if(rag[i]==='R'){const m=randInt(11,35);const cur=base*m;return {name:svc.name,purpose:svc.purpose,avgHitsMin:base,currentHitsMin:Math.round(cur),ragAnswer:'R',actionAnswer:'block',notes:`${m}× higher than normal.`,handled:false,userRag:null,userAction:null,graphData:this._generateGraphHistory(base,Math.round(cur))};}
+      else if(rag[i]==='A'){const m=randFloat(3.2,9.5,1);const cur=Math.round(base*m);return {name:svc.name,purpose:svc.purpose,avgHitsMin:base,currentHitsMin:cur,ragAnswer:'A',actionAnswer:'throttle',notes:`${m}× the usual amount.`,handled:false,userRag:null,userAction:null,graphData:this._generateGraphHistory(base,cur)};}
+      else if(i===edgeAt){const m=randFloat(1.8,2.4,1);const cur=Math.round(base*m);return {name:svc.name,purpose:svc.purpose,avgHitsMin:base,currentHitsMin:cur,ragAnswer:'G',actionAnswer:'ignore',notes:`${m}× usual — today's product launch is bringing real visitors.`,handled:false,userRag:null,userAction:null,graphData:this._generateGraphHistory(base,cur)};}
+      else{const cur=jitter(base,0.1);return {name:svc.name,purpose:svc.purpose,avgHitsMin:base,currentHitsMin:Math.round(cur),ragAnswer:'G',actionAnswer:'ignore',notes:`${Math.round(cur).toLocaleString()}/min — close to the ${base.toLocaleString()}/min average.`,handled:false,userRag:null,userAction:null,graphData:this._generateGraphHistory(base,Math.round(cur))};}
     });
   },
   _generateGraphHistory(baseline, current) {
@@ -138,6 +108,13 @@ MODULES.ddos = {
     quiz: [
       { q: 'What does a DDoS attack do?', options: ['Steals your password 🔑', 'Floods a website until it breaks 🌊', 'Deletes your files 🗑️'], correct: 1 },
       { q: 'Traffic is 15× higher than normal. What do you do?', options: ['Leave it — probably fine ✅', 'Block it 🚫', 'Restart the computer 💻'], correct: 1 },
+      { q: 'What is a botnet?', options: ['A type of antivirus 🛡️', 'A robot that cleans computers 🤖', 'Thousands of hacked computers used to attack at once 💻'], correct: 2 },
+      { q: 'Traffic is 2× normal on a day with a big product launch. What should you do?', options: ['Block it straight away 🚫', 'Investigate — it might be real traffic 🔍', 'Ignore it completely ✅'], correct: 1 },
+      { q: 'What does DDoS stand for?', options: ['Distributed Denial of Service', 'Digital Data on Servers', 'Direct Download of Software'], correct: 0 },
+      { q: 'Why do attackers use thousands of computers in a DDoS?', options: ["To make the attack look more legitimate 🎭","So it's harder to block — you can't just ban one IP 🌐","To save money on internet bills 💰"], correct: 1 },
+      { q: 'What does "throttling" traffic mean?', options: ["Blocking it completely 🚫","Slowing it down so the server can cope ⚡","Speeding it up 🏎️"], correct: 1 },
+      { q: 'Why are DDoS attacks hard to stop?', options: ["Because the traffic looks real and comes from everywhere 🌍","Because they happen at night 🌙","Because computers are slow 🐢"], correct: 0 },
+      { q: 'What should you protect MOST during a DDoS?', options: ["The coffee machine ☕","Critical services like login pages and payments 💳","The office printer 🖨️"], correct: 1 },
     ]
   },
 };
@@ -161,63 +138,20 @@ MODULES.malware = {
     correct: 'Process Monitor',
     decoys: ['Network Traffic Monitor','Email Header Analyser','Bandwidth Checker','Firewall Rules Editor','Packet Sniffer']
   },
-  generateScenario() {
-    // Processes — includes trickier edge cases:
-    // - Legit-sounding name but unknown = RED (e.g. svch0st.exe — zero not O)
-    // - High CPU but it's Windows Update = GREEN (edge case: legitimate reason)
-    // - Low CPU but clearly fake name = RED (backdoors are sneaky!)
-    const processes = [
-      { name: 'svchost.exe',      legitimate: true,  cpuBase: 1.2, memBase: 48,   purpose: 'Windows system service (real)' },
-      { name: 'chrome.exe',       legitimate: true,  cpuBase: 8,   memBase: 340,  purpose: 'Google Chrome browser' },
-      { name: 'explorer.exe',     legitimate: true,  cpuBase: 0.8, memBase: 62,   purpose: 'Windows file explorer' },
-      { name: 'svch0st.exe',      legitimate: false, cpuBase: 45,  memBase: 890,  purpose: '⚠️ NOT real! Zero instead of O — sneaky fake!', edgeCase: 'lookalike' },
-      { name: 'WinUpdate.exe',    legitimate: true,  cpuBase: 55,  memBase: 620,  purpose: 'Windows Update (high CPU is normal when updating)', edgeCase: 'highCpuLegit' },
-      { name: 'cryptminer.tmp',   legitimate: false, cpuBase: 92,  memBase: 1200, purpose: '⚠️ Suspicious name — not a real Windows program!' },
-      { name: 'helper32.exe',     legitimate: false, cpuBase: 28,  memBase: 420,  purpose: '⚠️ Unknown origin — not found in software list' },
-      { name: 'msedge.exe',       legitimate: true,  cpuBase: 6,   memBase: 280,  purpose: 'Microsoft Edge browser' },
-      { name: 'backdoor_srv.exe', legitimate: false, cpuBase: 3,   memBase: 55,   purpose: '⚠️ Fake server — low CPU to hide, but the name gives it away!', edgeCase: 'lowCpuBad' },
-      { name: 'antimalware.exe',  legitimate: true,  cpuBase: 2.1, memBase: 95,   purpose: 'Windows Defender (your antivirus)' }
-    ];
-
-    const chosen = shuffle(processes).slice(0, 5);
-    const forceMalware = Math.random() > 0.2; // 80% chance of at least one bad process
-
-    return chosen.map((proc, i) => {
-      const cpu = jitter(proc.cpuBase, 0.15);
-      const mem = jitter(proc.memBase, 0.12);
-      const networkKBs = (!proc.legitimate) ? randInt(200, 4000) : randInt(0, 80);
-
-      let ragAnswer, actionAnswer, notes;
-
-      if (!proc.legitimate) {
-        if (proc.edgeCase === 'lookalike') {
-          ragAnswer = 'R'; actionAnswer = 'quarantine';
-          notes = `Not recognised in the standard program list.`;
-        } else if (proc.edgeCase === 'lowCpuBad') {
-          ragAnswer = 'R'; actionAnswer = 'quarantine';
-          notes = `Not a known Windows program. CPU is low — but the name gives it away.`;
-        } else {
-          ragAnswer = 'R'; actionAnswer = 'quarantine';
-          notes = `Not a known Windows program.`;
-        }
-      } else if (proc.edgeCase === 'highCpuLegit') {
-        ragAnswer = 'G'; actionAnswer = 'ignore';
-        notes = `Windows Update.`;
-      } else if (cpu > 70 && proc.legitimate) {
-        ragAnswer = 'A'; actionAnswer = 'investigate';
-        notes = `Real program but CPU is quite high right now (${cpu.toFixed(1)}%).`;
-      } else {
-        ragAnswer = 'G'; actionAnswer = 'ignore';
-        notes = `Known Windows program.`;
-      }
-
-      return {
-        name: proc.name, purpose: proc.purpose,
-        cpu: parseFloat(cpu.toFixed(1)), memMB: mem, networkKBs,
-        ragAnswer, actionAnswer, notes,
-        handled: false, userRag: null, userAction: null
-      };
-    });
+    generateScenario(params={}) {
+    const {numEscalations=pick([1,2,2,2,3]),escalationType=pick(['RED_AMBER','RED_AMBER','RED_RED','AMBER_AMBER']),includeEdgeCase=Math.random()>.3,numItems=6}=params;
+    const malNames=['cryptminer.tmp','svch0st.exe','xyzwin32.exe','backdoor_srv.exe','helper32.exe','update_helper.tmp'];
+    const legit=[{name:'svchost.exe',cpuBase:1.2,memBase:48,purpose:'Windows system service'},{name:'chrome.exe',cpuBase:8,memBase:340,purpose:'Google Chrome browser'},{name:'explorer.exe',cpuBase:0.8,memBase:62,purpose:'Windows file explorer'},{name:'msedge.exe',cpuBase:6,memBase:280,purpose:'Microsoft Edge browser'},{name:'antimalware.exe',cpuBase:2.1,memBase:95,purpose:'Windows Defender'},{name:'winlogon.exe',cpuBase:0.4,memBase:18,purpose:'Windows login manager'},{name:'taskhost.exe',cpuBase:0.6,memBase:35,purpose:'Windows task host'}];
+    const rp=buildRagProfile(escalationType,numEscalations);
+    const edgeAt=includeEdgeCase?numEscalations:-1;
+    const items=[];
+    for(let i=0;i<numItems;i++){
+      if(rp[i]==='R'){const nm=pick(malNames);const cpu=randFloat(40,95,1);items.push({name:nm,purpose:'Not a known Windows program',cpu,memMB:randInt(400,1400),networkKBs:randInt(500,5000),ragAnswer:'R',actionAnswer:'quarantine',notes:'Not recognised in the standard program list.',handled:false,userRag:null,userAction:null});}
+      else if(rp[i]==='A'){const p=pick(legit);const cpu=randFloat(72,90,1);items.push({name:p.name,purpose:p.purpose,cpu,memMB:Math.round(jitter(p.memBase,0.15)),networkKBs:randInt(80,300),ragAnswer:'A',actionAnswer:'investigate',notes:`Real program but CPU is quite high right now (${cpu.toFixed(1)}%).`,handled:false,userRag:null,userAction:null});}
+      else if(i===edgeAt){const cpu=randFloat(48,66,1);items.push({name:'WinUpdate.exe',purpose:'Windows Update',cpu,memMB:randInt(400,700),networkKBs:randInt(10,80),ragAnswer:'G',actionAnswer:'ignore',notes:'Windows Update.',handled:false,userRag:null,userAction:null});}
+      else{const p=pick(legit);items.push({name:p.name,purpose:p.purpose,cpu:parseFloat(jitter(p.cpuBase,0.2).toFixed(1)),memMB:Math.round(jitter(p.memBase,0.12)),networkKBs:randInt(0,50),ragAnswer:'G',actionAnswer:'ignore',notes:'Known Windows program.',handled:false,userRag:null,userAction:null});}
+    }
+    return items;
   },
   reportTeams: { correct: 'Incident Response Team', incorrect: 'Facilities Management' },
   completionText(mode, scenario) {
@@ -234,6 +168,13 @@ MODULES.malware = {
     quiz: [
       { q: 'You see "cryptminer.tmp" using 92% CPU. What is it probably doing?', options: ['Running normally ✅', 'Hiding as malware and using your computer\'s power 🔴', 'Just updating Windows 🔄'], correct: 1 },
       { q: '"WinUpdate.exe" is using 55% CPU. What do you do?', options: ['Quarantine it immediately 🚫', 'Leave it — Windows Update often uses lots of power ✅', 'Turn off the computer 💻'], correct: 1 },
+      { q: 'What is malware?', options: ['A type of computer hardware 🖥️', 'Bad software designed to cause harm 🦠', 'A fast internet connection 📶'], correct: 1 },
+      { q: 'You "quarantine" a program. What does that mean?', options: ['You delete it permanently 🗑️', 'You move it somewhere safe so it can\'t spread 🔒', 'You give it more memory 💾'], correct: 1 },
+      { q: 'Malware sometimes uses low CPU on purpose. Why?', options: ['To make your computer faster ⚡', 'To hide and avoid being spotted 🕵️', 'Because it\'s not doing anything 😴'], correct: 1 },
+      { q: 'What should you do FIRST if you spot malware?', options: ['Delete the whole computer 🗑️', 'Isolate the computer from the network immediately 🔌', 'Tell your friends 📱'], correct: 1 },
+      { q: 'Malware with a name like "svchost.exe" is trying to:', options: ["Help Windows run faster ⚡","Look like a real Windows program to hide 🎭","Update your antivirus 🛡️"], correct: 1 },
+      { q: 'High network usage on an unknown process might mean:', options: ["The internet is slow today 🐌","The program is secretly sending data to a hacker 📤","The video call is buffering 📹"], correct: 1 },
+      { q: 'What is a "trojan horse" type of malware?', options: ["A virus from Greece 🏛️","Software that looks helpful but is secretly harmful 🎁","A type of firewall 🛡️"], correct: 1 },
     ]
   },
 };
@@ -345,75 +286,18 @@ MODULES.ransomware = {
     correct: 'File Integrity Monitor',
     decoys: ['Network Traffic Monitor','Database Query Analyser','Email Header Analyser','Process Monitor','Wi-Fi Scanner']
   },
-  generateScenario() {
-    // EDGE CASES in this module:
-    // 1. A drive showing high writes but it's a SCHEDULED BACKUP (should be IGNORE — not ransomware!)
-    // 2. A drive with a very low encryption count but new suspicious extension (early-stage = AMBER/investigate)
-    // 3. Full-blown ransomware = lots encrypted + suspicious extension = RED/isolate
-    const drives = [
-      { name: 'C:\\ System Drive',        purpose: 'Operating system and programs' },
-      { name: 'D:\\ Documents Drive',     purpose: 'Staff documents and files' },
-      { name: 'E:\\ Backup Share',        purpose: 'Nightly backup storage', isBackupDrive: true },
-      { name: 'F:\\ Media Files',         purpose: 'Company photos and videos' },
-      { name: '\\\\Server01\\HR',         purpose: 'HR files and records' },
-      { name: '\\\\Server02\\Finance',    purpose: 'Finance spreadsheets' },
-    ];
-
-    const chosen = shuffle(drives).slice(0, 5);
-    const attackStarted = Math.random() > 0.2;
-    const attackDrive   = attackStarted ? randInt(0, 1) : -1;
-
-    return chosen.map((drive, i) => {
-      const isAttacked   = attackStarted && i <= attackDrive;
-      const isFront      = isAttacked && i === attackDrive;
-      const totalFiles   = randInt(1200, 45000);
-
-      // Edge case: high writes on a backup drive but NOT ransomware
-      const isNightlyBackup = drive.isBackupDrive && !isAttacked && Math.random() > 0.4;
-
-      let encryptedFiles, newExtensions, writeOpsMin, ragAnswer, actionAnswer, notes;
-
-      if (isNightlyBackup) {
-        encryptedFiles = Math.round(totalFiles * randFloat(0.1, 0.3) / 100);
-        newExtensions  = '.bak';
-        writeOpsMin    = randInt(600, 3500);
-        ragAnswer      = 'G'; actionAnswer = 'ignore';
-        notes          = `Extension: .bak`;
-      } else if (isAttacked && isFront) {
-        const isEarlyStage = Math.random() > 0.5;
-        if (isEarlyStage) {
-          encryptedFiles = Math.round(totalFiles * randFloat(0.5, 4.0) / 100);
-          newExtensions  = pick(['.locked','.encrypted','.WNCRY','.zepto']);
-          writeOpsMin    = randInt(300, 900);
-          ragAnswer      = 'A'; actionAnswer = 'investigate';
-          notes          = `${encryptedFiles.toLocaleString()} files now have a "${newExtensions}" extension — that's not normal.`;
-        } else {
-          encryptedFiles = Math.round(totalFiles * randFloat(25, 75) / 100);
-          newExtensions  = pick(['.locked','.encrypted','.WNCRY','.cerber','.crypted']);
-          writeOpsMin    = randInt(2000, 8000);
-          ragAnswer      = 'R'; actionAnswer = 'isolate';
-          notes          = `${((encryptedFiles/totalFiles)*100).toFixed(0)}% of files encrypted. Extension: "${newExtensions}".`;
-        }
-      } else if (isAttacked) {
-        encryptedFiles = Math.round(totalFiles * randFloat(0.85, 0.99));
-        newExtensions  = pick(['.locked','.encrypted','.WNCRY','.zepto','.cerber','.crypted']);
-        writeOpsMin    = randInt(800, 8000);
-        ragAnswer      = 'R'; actionAnswer = 'isolate';
-        notes          = `${((encryptedFiles/totalFiles)*100).toFixed(0)}% of files have the "${newExtensions}" extension.`;
-      } else {
-        encryptedFiles = Math.round(totalFiles * randFloat(0.1, 1.0) / 100);
-        newExtensions  = 'None';
-        writeOpsMin    = randInt(5, 55);
-        ragAnswer      = 'G'; actionAnswer = 'ignore';
-        notes          = ``;  // no note — data shown in columns
-      }
-
-      return {
-        name: drive.name, purpose: drive.purpose,
-        totalFiles, encryptedFiles, newExtensions, writeOpsMin,
-        ragAnswer, actionAnswer, notes,
-        handled: false, userRag: null, userAction: null
-      };
+    generateScenario(params={}) {
+    const {numEscalations=pick([1,2,2,2,3]),escalationType=pick(['RED_AMBER','RED_AMBER','RED_RED','AMBER_AMBER']),includeEdgeCase=Math.random()>.3,numItems=6}=params;
+    const drives=[{name:'C:\\ System Drive',purpose:'Operating system and programs'},{name:'D:\\ Documents Drive',purpose:'Staff documents and files'},{name:'E:\\ Backup Share',purpose:'Nightly backup storage'},{name:'F:\\ Media Files',purpose:'Company photos and videos'},{name:'\\\\Server01\\HR',purpose:'HR files and records'},{name:'\\\\Server02\\Finance',purpose:'Finance spreadsheets'},{name:'\\\\NAS01\\Archive',purpose:'Long-term archive storage'},{name:'G:\\ Dev Share',purpose:'Developer code and projects'}];
+    const chosen=shuffle(drives).slice(0,numItems);
+    const rp=buildRagProfile(escalationType,numEscalations);
+    const edgeAt=includeEdgeCase?numEscalations:-1;
+    return chosen.map((d,i)=>{
+      const total=randInt(1200,45000);
+      if(rp[i]==='R'){const pct=randFloat(28,80)/100;const enc=Math.round(total*pct);const ext=pick(['.locked','.encrypted','.WNCRY','.cerber','.crypted']);return {name:d.name,purpose:d.purpose,totalFiles:total,encryptedFiles:enc,newExtensions:ext,writeOpsMin:randInt(2000,8000),ragAnswer:'R',actionAnswer:'isolate',notes:`${Math.round(pct*100)}% of files encrypted. Extension: "${ext}".`,handled:false,userRag:null,userAction:null};}
+      else if(rp[i]==='A'){const enc=Math.round(total*randFloat(0.5,4)/100);const ext=pick(['.locked','.encrypted','.WNCRY','.zepto']);return {name:d.name,purpose:d.purpose,totalFiles:total,encryptedFiles:enc,newExtensions:ext,writeOpsMin:randInt(300,900),ragAnswer:'A',actionAnswer:'investigate',notes:`${enc.toLocaleString()} files now have a "${ext}" extension.`,handled:false,userRag:null,userAction:null};}
+      else if(i===edgeAt){return {name:d.name,purpose:d.purpose,totalFiles:total,encryptedFiles:Math.round(total*randFloat(0.1,0.3)/100),newExtensions:'.bak',writeOpsMin:randInt(600,3500),ragAnswer:'G',actionAnswer:'ignore',notes:'Extension: .bak — this is just a backup file. Normal for a backup drive!',handled:false,userRag:null,userAction:null};}
+      else{return {name:d.name,purpose:d.purpose,totalFiles:total,encryptedFiles:Math.round(total*randFloat(0.1,1)/100),newExtensions:'None',writeOpsMin:randInt(5,55),ragAnswer:'G',actionAnswer:'ignore',notes:'',handled:false,userRag:null,userAction:null};}
     });
   },
   reportTeams: { correct: 'Incident Response & Business Continuity Team', incorrect: 'Customer Service Team' },
@@ -430,6 +314,13 @@ MODULES.ransomware = {
     quiz: [
       { q: 'Files on a drive now end in ".locked". What does that mean?', options: ['They\'ve been backed up safely 💾', 'They\'ve been encrypted by ransomware 🔴', 'The drive is full 📦'], correct: 1 },
       { q: 'The backup drive has lots of ".bak" files. What do you do?', options: ['Isolate it immediately! 🚫', 'Leave it — ".bak" is just a backup file ✅', 'Delete all the .bak files 🗑️'], correct: 1 },
+      { q: 'What does encryption mean?', options: ['Making files bigger 📂', 'Scrambling data so it can\'t be read without a key 🔑', 'Copying files to another drive 💿'], correct: 1 },
+      { q: 'Why is backing up your files important?', options: ['It makes your computer faster ⚡', 'If ransomware hits, you still have copies 💾', 'It stops all viruses from getting in 🛡️'], correct: 1 },
+      { q: 'Should you pay a ransom to get your files back?', options: ['Yes — they always keep their word 💰', 'No — paying doesn\'t guarantee you get your files back 🚫', 'Only pay half of it 🤔'], correct: 1 },
+      { q: 'How does ransomware usually arrive on a computer?', options: ['By typing in a special code 🔢', 'Via phishing emails or infected downloads 📧', 'Only through USB sticks 🔌'], correct: 1 },
+      { q: 'What does "isolating" a drive mean?', options: ['Putting it in the freezer ❄️', 'Disconnecting it so the ransomware can\'t spread further 🔌', 'Making it run faster ⚡'], correct: 1 },
+      { q: 'Why does ransomware change file extensions like ".locked"?', options: ['To organise your files better 📁', 'To signal the files have been encrypted and are now unusable 🔒', 'To save disk space 💾'], correct: 1 },
+      { q: 'What is the best defence against ransomware?', options: ['Keep recent backups stored offline or offsite 💾', 'Have a very long password 🔑', 'Never use the internet 🌐'], correct: 0 },
     ]
   },
 };
@@ -734,7 +625,7 @@ MODULES.vulnerabilityScan = {
 };
 
 // Export module list for engine
-const MODULE_LIST = ['ddos','malware','sqli','ransomware','phishingHarvest','mitm','insiderThreat','vulnerabilityScan'];
+var MODULE_LIST = ['ddos','malware','sqli','ransomware','phishingHarvest','mitm','insiderThreat','vulnerabilityScan'];
 
 // Build tool options for dropdown
 function getToolOptions(moduleId) {
@@ -745,12 +636,11 @@ function getToolOptions(moduleId) {
 }
 
 // DATA COLUMN CONFIG per module
-const MODULE_COLUMNS = {
+var MODULE_COLUMNS = {
   ddos: [
     { key: 'name', label: 'SERVICE' },
     { key: 'avgHitsMin', label: 'AVG /MIN' },
-    { key: 'currentHitsMin', label: 'CURRENT /MIN' },
-    { key: 'notes', label: 'NOTE' }
+    { key: 'currentHitsMin', label: 'CURRENT /MIN' }
   ],
   malware: [
     { key: 'name', label: 'PROCESS' },
@@ -797,7 +687,7 @@ const MODULE_COLUMNS = {
 };
 
 // ACTION BUTTONS per module
-const MODULE_ACTIONS = {
+var MODULE_ACTIONS = {
   ddos: [
     { id: 'block', label: 'BLOCK TRAFFIC', cls: 'btn-block' },
     { id: 'throttle', label: 'THROTTLE', cls: 'btn-throttle' },
@@ -833,6 +723,25 @@ const MODULE_ACTIONS = {
     { id: 'investigate', label: 'FLAG FOR REVIEW', cls: 'btn-throttle' },
     { id: 'ignore', label: 'IGNORE (OK)', cls: 'btn-ignore' }
   ],
+  phishingModule: [
+    { id: 'report', label: '🚩 REPORT PHISHING', cls: 'btn-block' },
+    { id: 'ignore', label: '✅ DELIVER (GENUINE)', cls: 'btn-ignore' }
+  ],
+  bruteForce: [
+    { id: 'lockAccount', label: '🔒 LOCK ACCOUNT', cls: 'btn-block' },
+    { id: 'investigate', label: '🔍 INVESTIGATE', cls: 'btn-throttle' },
+    { id: 'ignore', label: '✅ NORMAL ACTIVITY', cls: 'btn-ignore' }
+  ],
+  socialEng: [
+    { id: 'block', label: '🚫 BLOCK & REPORT', cls: 'btn-block' },
+    { id: 'investigate', label: '🔍 VERIFY FIRST', cls: 'btn-throttle' },
+    { id: 'ignore', label: '✅ LEGITIMATE', cls: 'btn-ignore' }
+  ],
+  usbDrop: [
+    { id: 'quarantine', label: '🔌 QUARANTINE PC', cls: 'btn-block' },
+    { id: 'investigate', label: '🔍 INVESTIGATE', cls: 'btn-throttle' },
+    { id: 'ignore', label: '✅ AUTHORISED', cls: 'btn-ignore' }
+  ],
   vulnerabilityScan: [
     { id: 'patchNow', label: 'PATCH NOW', cls: 'btn-block' },
     { id: 'schedulePatch', label: 'SCHEDULE PATCH', cls: 'btn-throttle' },
@@ -861,54 +770,15 @@ MODULES.phishingModule = {
     correct: 'Email Header Analyser',
     decoys: ['Network Traffic Monitor','Process Monitor','DLP Monitor','Vulnerability Scanner Dashboard','Authentication Log Viewer']
   },
-  generateScenario() {
-    const realSenders = [
-      { from:'hr@company.com',            subject:'Updated Holiday Policy',                   body:'Hi team,\n\nPlease find the updated holiday booking policy attached. Changes take effect from 1st January.\n\nHR Team', phishing:false },
-      { from:'it@company.com',            subject:'Scheduled Maintenance Tonight 11pm–2am',   body:'Hi everyone,\n\nWe will be performing scheduled server maintenance tonight between 11pm and 2am. Some services may be briefly unavailable.\n\nIT Department', phishing:false },
-      { from:'ceo@company.com',           subject:'All-Hands Meeting Next Friday',             body:'Hi all,\n\nJust a reminder that our quarterly all-hands meeting is next Friday at 10am in the main conference room.\n\nThanks', phishing:false },
-      { from:'payroll@company.com',       subject:'Your Payslip Is Ready',                    body:'Hi,\n\nYour payslip for this month is now available in the HR portal. Log in at hr.company.com to view it.\n\nPayroll', phishing:false },
-      { from:'newsletter@bbc.co.uk',      subject:'BBC News: Top Stories Today',              body:"Here are today's top stories from BBC News. Visit bbc.co.uk/news to read more.", phishing:false },
-      { from:'training@company.com',      subject:'Mandatory Cybersecurity Training Reminder', body:'Hi,\n\nThis is a reminder that your annual cybersecurity awareness training is due this month. Please log in to the training portal at learn.company.com.\n\nL&D Team', phishing:false },
-      { from:'helpdesk@company.com',      subject:'Your Support Ticket Has Been Resolved',    body:'Hi,\n\nYour IT support ticket #48821 has been resolved. If you have further questions please reply to this email.\n\nIT Helpdesk', phishing:false },
-      { from:'notifications@linkedin.com',subject:'You have 3 new connection requests',       body:'You have new connection requests waiting on LinkedIn. Log in at linkedin.com to review them.', phishing:false },
-      { from:'finance@company.com',       subject:'Q3 Budget Review — Please Review',         body:'Hi team,\n\nPlease review the attached Q3 budget summary before Thursday\'s finance meeting. Document is available in SharePoint.\n\nFinance Team', phishing:false },
-      { from:'noreply@github.com',        subject:'[GitHub] Action required: Review your SSH keys', body:'Hi,\n\nWe noticed you have SSH keys on your GitHub account that haven\'t been used in over a year. Please review them at github.com/settings/keys.\n\nGitHub Security', phishing:false },
-    ];
-
-    const phishSenders = [
-      { from:'hr@c0mpany.com',            subject:'URGENT: Update Your Bank Details NOW',     body:'Dear Employee,\n\nWe are updating payroll records. You MUST update your bank details within 24 hours or your salary will be delayed.\n\nClick here: http://payroll-update.c0mpany.com/login\n\nHR Dept', phishing:true, clue:'Misspelt domain: c0mpany.com (zero not the letter O)' },
-      { from:'it-support@company.helpdesk.xyz', subject:'Your Password Has Expired — Reset Now', body:'URGENT: Your network password expired 2 days ago. Your account will be locked in 1 hour.\n\nReset here: http://company.helpdesk.xyz/reset\n\nIT Support', phishing:true, clue:'Domain is company.helpdesk.xyz — not the real company.com domain' },
-      { from:'ceo@company-group.net',     subject:'Confidential: Wire Transfer Required Today', body:'Hi,\n\nI need you to urgently process a wire transfer of £8,500 to a new supplier. This is confidential — don\'t discuss with anyone else. Reply for bank details.\n\nCEO', phishing:true, clue:'CEO would never secretly ask staff to transfer money by email' },
-      { from:'security@paypa1.com',       subject:'Your PayPal Account Has Been Suspended',   body:'Dear Customer,\n\nUnusual activity was detected on your account. Verify your identity immediately or your account will be permanently closed:\n\nhttp://secure.paypa1.com/verify\n\n— PayPal Security', phishing:true, clue:'Domain is paypa1.com — the letter l replaced with the number 1' },
-      { from:'admin@microsooft.com',      subject:'Microsoft 365: Storage Almost Full',        body:'Your OneDrive storage is critically low. Upgrade immediately to avoid losing files:\n\nhttp://microsooft.com/storage-upgrade\n\n— Microsoft Team', phishing:true, clue:'microsooft.com — double O in Microsoft' },
-      { from:'noreply@amaz0n.co.uk',      subject:'Your Order Has Been Cancelled',             body:'Dear Customer,\n\nYour recent order has been unexpectedly cancelled due to a payment issue. Please update your payment details immediately:\n\nhttp://account.amaz0n.co.uk/billing\n\n— Amazon Customer Service', phishing:true, clue:'amaz0n.co.uk — zero instead of the letter O' },
-      { from:'accounts@comp4ny.com',      subject:'Invoice #INV-20948 — Payment Overdue',     body:'Dear Sir/Madam,\n\nYour account has an outstanding invoice of £3,240. Please make payment immediately to avoid legal action.\n\nDownload invoice: http://comp4ny.com/invoice\n\nAccounts Team', phishing:true, clue:'comp4ny.com — number 4 instead of letter A' },
-      { from:'security-alert@g00gle.com', subject:'Suspicious Sign-In Detected on Your Account', body:'We detected a sign-in from an unrecognised device in Russia. If this was not you, secure your account immediately:\n\nhttp://g00gle.com/security/review\n\nGoogle Security Team', phishing:true, clue:'g00gle.com — double zero instead of double O' },
-      { from:'hr@cornpany.com',           subject:'Christmas Party Venue Poll — Vote Now!',   body:'Hi all,\n\nPlease click the link below to vote for this year\'s Christmas party venue. Votes must be in by Friday!\n\nhttp://cornpany.com/party-vote\n\nHR', phishing:true, clue:'cornpany.com — corn instead of com (transposed letters)' },
-      { from:'support@netfl1x.com',       subject:'Your Netflix Subscription Has Expired',    body:'Dear Member,\n\nYour Netflix subscription has expired. To continue watching, please update your payment details:\n\nhttp://account.netfl1x.com/billing\n\n— Netflix Support', phishing:true, clue:'netfl1x.com — number 1 instead of the letter i' },
-      { from:'it@company.com.phishkit.ru',subject:'Password Reset Required — Action Needed',  body:'Dear User,\n\nYour company password must be reset within 24 hours as part of our security upgrade.\n\nReset here: http://company.com.phishkit.ru/reset\n\nIT Department', phishing:true, clue:'The real domain is company.com — phishkit.ru is appended after it to trick you' },
-      { from:'noreply@dropb0x.com',       subject:'Someone Shared a File With You',           body:'A colleague has shared an important document with you on Dropbox.\n\nView file: http://dropb0x.com/shared/documents\n\nDropbox', phishing:true, clue:'dropb0x.com — zero instead of the letter O' },
-    ];
-
-    // Pick 2–4 real and 1–3 phishing, total 5 — shuffled so order is always different
-    const numReal  = randInt(2, 4);
-    const numPhish = 5 - numReal;
-    const reals    = shuffle(realSenders).slice(0, numReal);
-    const phishs   = shuffle(phishSenders).slice(0, numPhish);
-    const all      = shuffle([...reals, ...phishs]);
-
-    return all.map(e => ({
-      name:     e.from,
-      purpose:  e.subject,
-      body:     e.body,
-      domain:   e.from.split('@')[1] || e.from,
-      clue:     e.clue || 'Legitimate company email',
-      isPhish:  e.phishing,
-      ragAnswer:   e.phishing ? 'R' : 'G',
-      actionAnswer:e.phishing ? 'report' : 'ignore',
-      notes:    e.phishing ? `⚠ PHISHING: ${e.clue}` : '✓ Legitimate email — safe to deliver',
-      handled:false, userRag:null, userAction:null,
-    }));
+    generateScenario(params={}) {
+    const {numEscalations=pick([0,1,2,2,3]),numItems=6}=params;
+    const numPhish=Math.min(numEscalations,numItems-1);
+    const numReal=numItems-numPhish;
+    const realPool=[{from:'hr@company.com',subject:'Updated Holiday Policy',body:'Hi team,\n\nThe updated holiday booking policy is attached.\n\nHR Team',phishing:false},{from:'it@company.com',subject:'Maintenance Tonight 11pm–2am',body:'Hi,\n\nServer maintenance tonight.\n\nIT Department',phishing:false},{from:'ceo@company.com',subject:'Team Meeting Next Friday',body:'Hi all,\n\nAll-hands at 10am next Friday.\n\nThanks',phishing:false},{from:'payroll@company.com',subject:'Your Payslip Is Ready',body:'Your payslip is in the HR portal.\n\nPayroll',phishing:false},{from:'helpdesk@company.com',subject:'Your Support Ticket Is Fixed',body:'Ticket #48821 resolved.\n\nIT Helpdesk',phishing:false},{from:'training@company.com',subject:'Reminder: Cybersecurity Training',body:'Your cybersecurity training is due.\n\nL&D',phishing:false},{from:'noreply@linkedin.com',subject:'You have 3 new connection requests',body:'Log in at linkedin.com to see them.',phishing:false}];
+    const phishPool=[{from:'hr@c0mpany.com',subject:'URGENT: Update Your Bank Details NOW',body:'Update bank details in 24hrs or pay stops.',phishing:true,clue:"c0mpany.com — zero (0) not the letter O!"},{from:'it-support@company.helpdesk.xyz',subject:'Your Password Has Expired!',body:'Account locks in 1 hour!',phishing:true,clue:'Real address ends .com — .helpdesk.xyz is fake!'},{from:'security@paypa1.com',subject:'Your PayPal Account Is Suspended',body:'Verify now or account closed.',phishing:true,clue:"paypa1.com — the l is the number 1!"},{from:'admin@microsooft.com',subject:'Your Storage Is Almost Full',body:'Upgrade now.',phishing:true,clue:"microsooft.com — two Os! Real is microsoft.com"},{from:'noreply@amaz0n.co.uk',subject:'Your Order Has Been Cancelled',body:'Update your card details.',phishing:true,clue:'amaz0n.co.uk — zero instead of O!'},{from:'security-alert@g00gle.com',subject:'Someone Signed Into Your Account',body:'Secure your account: g00gle.com',phishing:true,clue:"g00gle.com — two zeros instead of Os!"},{from:'it@company.com.phishkit.ru',subject:'Password Reset Required',body:'Reset: company.com.phishkit.ru/reset',phishing:true,clue:'Real .com address has .phishkit.ru tacked on!'},{from:'hr@cornpany.com',subject:'Christmas Party Vote',body:'Vote: cornpany.com/party-vote',phishing:true,clue:"cornpany.com — corn instead of com!"}];
+    const reals=shuffle(realPool).slice(0,numReal);
+    const phishs=shuffle(phishPool).slice(0,numPhish);
+    return shuffle([...reals,...phishs]).map(e=>({name:e.from,purpose:e.subject,body:e.body,domain:e.from.split('@')[1]||e.from,clue:e.clue||'Real company email',isPhish:e.phishing,ragAnswer:e.phishing?'R':'G',actionAnswer:e.phishing?'report':'ignore',notes:'',handled:false,userRag:null,userAction:null}));
   },
   emailBody(scenario) {
     return pick([
@@ -946,8 +816,9 @@ MODULES.phishingModule = {
       { from:'hr@cornpany.com',             subject:'Christmas Party Vote',                body:'Vote for the Christmas party venue here:\n\nhttp://cornpany.com/party-vote\n\nHR', phishing:true, clue:'cornpany.com — "corn" instead of "com" — the letters are mixed up!' },
     ];
 
-    const numReal  = randInt(2, 4);
-    const numPhish = 5 - numReal;
+    // numPhish can be 0 (all genuine), 1, 2, or 3
+    const numPhish = pick([1, 2, 2, 2, 3]);
+    const numReal  = 6 - numPhish;  // total always 6
     const reals    = shuffle(realSenders).slice(0, numReal);
     const phishs   = shuffle(phishSenders).slice(0, numPhish);
     const all      = shuffle([...reals, ...phishs]);
@@ -981,6 +852,13 @@ MODULES.phishingModule = {
     quiz: [
       { q: 'Which email address is fake?', options: ['hr@company.com', 'security@paypa1.com', 'it@company.com'], correct: 1 },
       { q: 'An email says "ACT NOW or your account is DELETED!" What\'s going on?', options: ['It\'s a real emergency — click fast! 😱', 'It\'s probably a phishing trick — check the address first 🔍', 'Reply to ask if it\'s real ✉️'], correct: 1 },
+      { q: 'Why do phishing emails use urgent language?', options: ['Because the sender is very busy ⏰', 'To make you panic so you click without thinking 😨', 'Because that\'s how professional emails work 💼'], correct: 1 },
+      { q: 'What should you NEVER share in an email?', options: ['Your name 👤', 'Your password 🔑', 'The date 📅'], correct: 1 },
+      { q: 'Is "support@amazon.co.uk.fakesite.com" really Amazon?', options: ['Yes — it starts with amazon ✅', 'No — the real domain is fakesite.com 🔴', 'Only if it looks official 💼'], correct: 1 },
+      { q: 'Why do phishing emails pretend to be from banks or PayPal?', options: ['Because hackers like money 💰', 'Because people trust them and act fast without checking 🏦', 'Because it is the law 📜'], correct: 1 },
+      { q: 'An email has a perfect logo and no spelling mistakes. Can it still be phishing?', options: ['No — bad spelling is always the giveaway ✍️', 'Yes — attackers can copy logos and write well 🎨', 'Only if it came from abroad 🌍'], correct: 1 },
+      { q: 'What is "spear phishing"?', options: ['Phishing with a fishing rod 🎣', 'A targeted attack using your real name and details 🎯', 'A type of DDoS attack 🌊'], correct: 1 },
+      { q: 'What is the SAFEST thing to do with a suspicious email?', options: ['Click the link to check if it\'s real 🖱️', 'Report it without opening it 🚩', 'Forward it to friends to warn them 📤'], correct: 1 },
     ]
   },
 };
@@ -1036,76 +914,17 @@ MODULES.bruteForce = {
     correct: 'Access Attempt Analyser',
     decoys: ['Network Traffic Monitor','File Integrity Monitor','Email Header Analyser','Process Monitor','Password Checker'],
   },
-  generateScenario() {
-    const accounts = [
-      { name: 'admin',       purpose: 'Main admin account' },
-      { name: 'j.henderson', purpose: 'Staff account' },
-      { name: 'ceo',         purpose: 'CEO account — very sensitive!' },
-      { name: 'svc_backup',  purpose: 'Backup service account' },
-      { name: 'k.okafor',    purpose: 'Staff account' },
-      { name: 'root',        purpose: 'Super-admin account' },
-      { name: 'reception',   purpose: 'Reception desk account' },
-      { name: 's.mehta',     purpose: 'Staff account' },
-      { name: 'db_service',  purpose: 'Database account' },
-      { name: 'webserver',   purpose: 'Web server account' },
-    ];
-
-    const chosen = shuffle(accounts).slice(0, 5);
-    const numAttacked = randInt(1, 3);
-
-    return chosen.map((acc, i) => {
-      const isAttacked    = i < numAttacked;
-      // Edge case 1: account was locked AND then a successful login appeared
-      const isCompromised = isAttacked && Math.random() > 0.65;
-      // Edge case 2: lots of attempts but from MANY IPs — distributed / credential stuffing
-      const isDistributed = isAttacked && !isCompromised && Math.random() > 0.6;
-
-      let attemptsPerMin, sourceIPs, intervalMs, ragAnswer, actionAnswer, notes;
-
-      if (!isAttacked) {
-        attemptsPerMin = randInt(0, 7);
-        sourceIPs      = randInt(3, 45);
-        intervalMs     = 'Varied';
-        ragAnswer = 'G'; actionAnswer = 'ignore';
-        notes = `${attemptsPerMin}/min across ${sourceIPs} devices.`;
-
-      } else if (isCompromised) {
-        // Locked — then someone got in
-        attemptsPerMin = randInt(150, 800);
-        sourceIPs      = randInt(1, 2);
-        intervalMs     = `~${randInt(30,200)}ms`;
-        ragAnswer = 'R'; actionAnswer = 'lockAccount';
-        notes = `Account locked after ${attemptsPerMin.toLocaleString()} rapid attempts — then a successful login appeared ⚠`;
-
-      } else if (isDistributed) {
-        // Many IPs but still suspicious — harder edge case
-        attemptsPerMin = randInt(200, 900);
-        sourceIPs      = randInt(60, 300);
-        intervalMs     = 'Varied';
-        ragAnswer = 'A'; actionAnswer = 'investigate';
-        notes = `${attemptsPerMin.toLocaleString()}/min but from ${sourceIPs} different locations — coordinated but spread out.`;
-
-      } else {
-        // Classic brute force
-        const interval = randInt(20, 250);
-        attemptsPerMin = randInt(120, 2000);
-        sourceIPs      = randInt(1, 3);
-        intervalMs     = `~${interval}ms`;
-        if (attemptsPerMin > 400 || sourceIPs === 1) {
-          ragAnswer = 'R'; actionAnswer = 'lockAccount';
-          notes = `${attemptsPerMin.toLocaleString()}/min from ${sourceIPs === 1 ? '1 computer' : sourceIPs+' computers'}, every ~${interval}ms.`;
-        } else {
-          ragAnswer = 'A'; actionAnswer = 'investigate';
-          notes = `${attemptsPerMin.toLocaleString()}/min from ${sourceIPs} computers — attempts every ${interval}ms, looks robotic.`;
-        }
-      }
-
-      return {
-        name: acc.name, purpose: acc.purpose,
-        attemptsPerMin, sourceIPs, intervalMs,
-        ragAnswer, actionAnswer, notes,
-        handled: false, userRag: null, userAction: null,
-      };
+    generateScenario(params={}) {
+    const {numEscalations=pick([1,2,2,2,3]),escalationType=pick(['RED_AMBER','RED_AMBER','RED_RED','AMBER_AMBER']),includeEdgeCase=Math.random()>.3,numItems=6}=params;
+    const accounts=[{name:'admin',purpose:'Main admin account'},{name:'j.henderson',purpose:'Staff account'},{name:'ceo',purpose:'CEO account'},{name:'svc_backup',purpose:'Backup service account'},{name:'k.okafor',purpose:'Staff account'},{name:'root',purpose:'Super-admin account'},{name:'reception',purpose:'Reception desk account'},{name:'s.mehta',purpose:'Staff account'},{name:'db_service',purpose:'Database account'}];
+    const chosen=shuffle(accounts).slice(0,numItems);
+    const rp=buildRagProfile(escalationType,numEscalations);
+    const edgeAt=includeEdgeCase?numEscalations:-1;
+    return chosen.map((acc,i)=>{
+      if(rp[i]==='R'){const att=randInt(300,2000);const ips=randInt(1,2);const intv=randInt(20,150);return {name:acc.name,purpose:acc.purpose,attemptsPerMin:att,sourceIPs:ips,intervalMs:`~${intv}ms`,ragAnswer:'R',actionAnswer:'lockAccount',notes:`${att.toLocaleString()}/min from ${ips===1?'1 computer':ips+' computers'}, every ~${intv}ms.`,handled:false,userRag:null,userAction:null};}
+      else if(rp[i]==='A'){const att=randInt(60,299);const ips=randInt(2,6);const intv=randInt(150,450);return {name:acc.name,purpose:acc.purpose,attemptsPerMin:att,sourceIPs:ips,intervalMs:`~${intv}ms`,ragAnswer:'A',actionAnswer:'investigate',notes:`${att}/min from ${ips} computers — attempts are fast and evenly spaced, like a robot.`,handled:false,userRag:null,userAction:null};}
+      else if(i===edgeAt){const att=randInt(150,500);const intv=randInt(30,120);return {name:acc.name,purpose:acc.purpose,attemptsPerMin:att,sourceIPs:1,intervalMs:`~${intv}ms`,ragAnswer:'R',actionAnswer:'lockAccount',notes:'Account locked after loads of fast attempts — then a successful login! The attacker may have cracked the password. ⚠️',handled:false,userRag:null,userAction:null};}
+      else{const att=randInt(1,6);const ips=randInt(3,15);return {name:acc.name,purpose:acc.purpose,attemptsPerMin:att,sourceIPs:ips,intervalMs:'Varied',ragAnswer:'G',actionAnswer:'ignore',notes:`Only ${att}/min spread across ${ips} devices — that's less than 1 wrong attempt per device. Just normal humans mistyping. Real bot attacks use 300+/min from 1-2 computers.`,handled:false,userRag:null,userAction:null};}
     });
   },
   reportTeams: {
@@ -1129,14 +948,21 @@ MODULES.bruteForce = {
     realWorld:    'This is why "password123" is dangerous — it would be cracked in seconds. A long random password takes years!',
     quiz: [
       { q: '800 login attempts per minute from 1 computer. What is it?', options: ['Normal — people type fast 🤷', 'A brute force attack 🔴', 'A DDoS attack 🌊'], correct: 1 },
-      { q: 'Which password survives a brute force attack longest?', options: ["cat123 🐱", "xK9#mQ2! 🔐", "your birthday 🎂"], correct: 1 },
+      { q: 'Which password survives a brute force attack longest?', options: ['cat123 🐱', 'xK9#mQ2! 🔐', 'your birthday 🎂'], correct: 1 },
+      { q: 'What is two-factor authentication (2FA)?', options: ['Using two passwords 🔑🔑', 'A second check (like a code on your phone) so stolen passwords alone don\'t work 📱', 'Having two email accounts 📧'], correct: 1 },
+      { q: 'Why are long passwords better?', options: ['They are easier to remember 🧠', 'There are more combinations to try, so it takes much longer to guess 🔐', 'They look more professional 💼'], correct: 1 },
+      { q: 'A locked account then shows a successful login. What does that mean?', options: ['The real user got lucky 🍀', 'The attacker may have guessed the password — investigate immediately! 🔴', 'The lock didn\'t work properly 🔒'], correct: 1 },
+      { q: 'What is a "dictionary attack"?', options: ['Hacking using a dictionary 📖', 'Trying thousands of common words and passwords automatically 🔑', 'A very slow brute force attack 🐢'], correct: 1 },
+      { q: 'What does "account lockout" do?', options: ['Permanently deletes the account 🗑️', 'Blocks the account after too many wrong passwords 🔒', 'Sends an email to the hacker 📧'], correct: 1 },
+      { q: 'Why do attackers spread a brute force attack across many computers?', options: ['To make it run faster ⚡', 'So no single computer gets blocked — spreading makes it harder to stop 🌐', 'To avoid paying for one powerful computer 💸'], correct: 1 },
+      { q: 'Which is the hardest password to brute force?', options: ['password123 🙈', 'YourPetName2024 🐶', 'k#9mQx!2vL@p 🔐'], correct: 2 },
     ]
   },
 };
 
 // ── MODULE POOL: 5 modules — engine picks 4 at random each session ──
 MODULE_LIST.length = 0;
-['ddos','malware','ransomware','phishingModule','bruteForce'].forEach(m => MODULE_LIST.push(m));
+['ddos','malware','ransomware','phishingModule','bruteForce','socialEng','usbDrop'].forEach(m => MODULE_LIST.push(m));
 
 MODULE_COLUMNS.bruteForce = [
   { key: 'name',           label: 'ACCOUNT' },
@@ -1149,4 +975,221 @@ MODULE_ACTIONS.bruteForce = [
   { id: 'lockAccount', label: '🔒 LOCK ACCOUNT',   cls: 'btn-r' },
   { id: 'investigate', label: '🔍 INVESTIGATE',    cls: 'btn-a' },
   { id: 'ignore',      label: '✓ IGNORE (Normal)', cls: 'btn-d' },
+];
+
+// ─────────────────────────────────────────────────────────────
+// MODULE 6: SOCIAL ENGINEERING
+// ─────────────────────────────────────────────────────────────
+MODULES.socialEng = {
+  id: 'socialEng',
+  name: 'SOCIAL ENGINEERING',
+  tools: {
+    correct: 'Help Desk Log Analyser',
+    decoys: ['Network Traffic Monitor','Process Monitor','File Integrity Monitor','Email Header Analyser','Access Attempt Analyser','USB Device Log'],
+  },
+  emailSender: () => pick(['security@infosec.io','alerts@staffwatch.net','hr-security@company.com']),
+  emailSubject: () => pick(['Unusual Staff Request Flagged','Help Desk Alert: Suspicious Caller','Social Engineering Attempt Reported']),
+  emailBody(scenario){
+    return pick([
+      `Hi,\n\nOur help desk has flagged some unusual requests today.\n\nSomeone appears to be trying to trick staff into handing over passwords or access by pretending to be someone they're not.\n\nPlease review the Help Desk Ticket Log below and decide which requests are genuine.\n\nSecurity Team`,
+      `Hi,\n\nWe've had reports of people calling staff and pretending to be from IT Support, Microsoft, or even senior managers.\n\nThey're trying to get passwords or access to systems. Please check the ticket log and flag anything suspicious.\n\nIT Security`,
+    ]);
+  },
+  tool: 'helpdesk',
+  toolLabel: '🎭 HELP DESK LOG',
+  briefing: {
+    title: 'Social Engineering',
+    tagline: 'Tricking people instead of hacking computers',
+    summary: 'Sometimes hackers don\'t attack computers at all — they attack people! They call, email or even visit in person pretending to be someone trustworthy (like IT support or your boss) to trick you into giving them passwords or access. It\'s called "social engineering" because they\'re engineering (tricking) people, not machines.',
+    watchFor: 'Urgent requests for passwords • Someone pretending to be IT, Microsoft or management • Requests that skip the normal process • Pressure to act quickly or secretly',
+    realWorld: 'Famous hack: In 2020, Twitter was hacked when attackers called Twitter staff pretending to be IT, tricked them into giving access, and took over celebrity accounts including Elon Musk\'s.',
+  },
+  generateScenario(params={}){
+    const {numEscalations=pick([1,2,2,2,3]),escalationType=pick(['RED_AMBER','RED_AMBER','RED_RED','AMBER_AMBER']),includeEdgeCase=Math.random()>.3,numItems=6}=params;
+    const tickets=[
+      {caller:'Unknown — said they were from Microsoft',dept:'External',req:'Asked for the admin password so they could "fix a virus remotely"',process:'No ticket number. Called out of the blue.',rag:'R',action:'block',note:'Microsoft never calls to ask for your password.'},
+      {caller:'Someone claiming to be the CEO',dept:'Unknown',req:'Asked receptionist to email them the staff payroll spreadsheet immediately',process:'Sent via personal Gmail, not company email. Said not to tell anyone.',rag:'R',action:'block',note:'Legitimate managers use company email and follow normal processes.'},
+      {caller:'Said they were from IT Support',dept:'IT (unverified)',req:'Needed the Wi-Fi password for a "new employee" who hadn\'t been set up yet',process:'No help desk ticket. Sounded very urgent.',rag:'R',action:'block',note:'New employees are set up through HR. IT never asks for Wi-Fi passwords this way.'},
+      {caller:'Someone claiming to be a new supplier',dept:'External',req:'Asked the finance team to update their bank details in the system',process:'Email came from a free Gmail account, not the supplier\'s usual address.',rag:'R',action:'block',note:'Bank detail changes must always be verified by phone using a known number.'},
+      {caller:'Person at reception, no ID',dept:'Unknown',req:'Said they\'d left their access card at home and needed to be let in',process:'Not on the visitor list. No manager came to meet them.',rag:'A',action:'investigate',note:'Could be genuine but must be verified — never let in unverified visitors.'},
+      {caller:'Caller claiming to be from the bank',dept:'External',req:'Said the company account had been frozen and needed login details to unfreeze it',process:'Wouldn\'t give a case reference number.',rag:'R',action:'block',note:'Banks never ask for your login details by phone.'},
+      {caller:'Email from "HR"',dept:'Internal (unverified)',req:'Asking all staff to confirm their passwords for a "security audit"',process:'Email was from hr@company-helpdesk.com, not hr@company.com',rag:'R',action:'block',note:'Spot the fake domain — helpdesk.com not company.com.'},
+      {caller:'Sarah from IT Support (known staff member)',dept:'IT',req:'Logged a ticket to reset a user\'s password following the standard process',process:'Proper ticket number. Verified via internal system.',rag:'G',action:'ignore',note:'Standard IT process followed correctly.'},
+      {caller:'New employee James via line manager',dept:'HR',req:'Access badge being processed — manager requested temporary visitor badge',process:'HR ticket raised. Manager confirmed by phone.',rag:'G',action:'ignore',note:'Correct process followed through proper channels.'},
+      {caller:'IT department',dept:'IT',req:'Scheduled password reset reminder sent to all staff (it\'s policy every 90 days)',process:'Sent from it@company.com with a proper ticket reference.',rag:'G',action:'ignore',note:'Legitimate scheduled process.'},
+      {caller:'Priya from Finance (known staff)',dept:'Finance',req:'Asked IT to reset her own email password — she was locked out',process:'Called from her desk extension. IT verified her identity with security questions.',rag:'G',action:'ignore',note:'Verified identity through proper checks.'},
+      {caller:'Facilities team',dept:'Facilities',req:'Emailed staff that the fire alarm test is at 2pm Thursday',process:'Sent from facilities@company.com. No links, no requests for info.',rag:'G',action:'ignore',note:'Normal internal notice — asks for nothing.'},
+      {caller:'Cleaning supervisor (badged visitor)',dept:'External (approved)',req:'Signed in at reception for the regular evening clean',process:'On the pre-approved visitor list. Badge issued and logged.',rag:'A',action:'investigate',note:'Approved but always worth a quick check against the visitor list.'},
+    ];
+    const rp=buildRagProfile(escalationType,numEscalations);
+    const reds=tickets.filter(t=>t.rag==='R');
+    const ambs=tickets.filter(t=>t.rag==='A');
+    const greens=tickets.filter(t=>t.rag==='G');
+    const edgeItem=includeEdgeCase&&ambs.length?[pick(ambs)]:[];
+    const redItems=shuffle(reds).slice(0,rp.filter(r=>r==='R').length);
+    const ambItems=rp.filter(r=>r==='A').length>edgeItem.length?shuffle(ambs.filter(a=>!edgeItem.includes(a))).slice(0,rp.filter(r=>r==='A').length-edgeItem.length):[];
+    const escalated=[...redItems,...ambItems,...edgeItem];
+    const needed=numItems-escalated.length;
+    const greenItems=shuffle(greens).slice(0,needed);
+    return shuffle([...escalated,...greenItems]).map(t=>({
+      name:t.caller,purpose:t.dept,
+      request:t.req,process:t.process,
+      ragAnswer:t.rag,actionAnswer:t.action,
+      notes:t.note,
+      handled:false,userRag:null,userAction:null,
+    }));
+  },
+  columns:[
+    {key:'name',      label:'CALLER / SENDER'},
+    {key:'purpose',   label:'DEPT'},
+    {key:'request',   label:'WHAT THEY WANTED'},
+    {key:'process',   label:'HOW THEY ASKED'},
+  ],
+  actions:{R:'block',A:'investigate',G:'ignore'},
+  actionLabels:{block:'🚫 BLOCK & REPORT',investigate:'🔍 VERIFY FIRST',ignore:'✅ LEGITIMATE'},
+  ragRules:{
+    R:'Asking for passwords / access / money — especially urgently or secretly → RED',
+    A:'Unusual but not obviously fake — needs verification before acting → AMBER',
+    G:'Follows proper process with verified identity → GREEN',
+  },
+  completionText(){
+    return `<div class="rc info"><h3>SOCIAL ENGINEERING — KEY FACTS</h3>
+    <p>Social engineers attack PEOPLE not computers. They use urgency, authority and trust to make you act without thinking.</p>
+    <p style="margin-top:8px;"><strong>Remember the golden rules:</strong> Never give passwords to anyone who asks. Always verify identity through a different channel. Legitimate IT never needs your password.</p></div>`;
+  },
+  reportTeams:{correct:'Security Awareness Team',incorrect:'Facilities Management'},
+  plenary:{
+    analogy:'Social engineering is like a con artist in a film — they use a disguise and a convincing story to steal something, without ever needing to break down the door.',
+    whatHappened:'Someone pretended to be trusted (IT, Microsoft, your boss) and tried to trick staff into giving away passwords or access.',
+    keyRule:'Legitimate organisations NEVER ask for your password. If anyone does — it\'s a scam.',
+    realWorld:'The 2020 Twitter hack used social engineering. Attackers called Twitter staff pretending to be IT, got access, and hijacked accounts with 100 million followers.',
+    reportQ:'Who should you call first if you think someone is trying to social engineer you?',
+    reportA:'Your IT Security or help desk team — straight away, before doing anything else.',
+    quiz:[
+      {q:'Microsoft calls you to say your computer has a virus and they need your password. What should you do?',options:['Give them the password so they can fix it 😬','Hang up — Microsoft never calls asking for passwords 📵','Check if your computer is slow first 🐢'],correct:1},
+      {q:'Someone at the door says they\'re from IT and forgot their pass. What should you do?',options:['Let them in — they look friendly 😊','Call IT to verify before letting anyone in 📞','Ask them to wait and then ignore them 🤷'],correct:1},
+      {q:'Your "boss" emails from a Gmail account asking for the payroll file urgently. What do you do?',options:['Send it — your boss needs it! 📧','Call your boss on their known number to check — bosses use company email 📞','Forward it just in case 🤷'],correct:1},
+      {q:'Why do social engineers create urgency ("do it NOW!")?',options:['Because they\'re very busy people 🏃','So you act without thinking or checking 🧠','Because computers work faster when things are urgent ⚡'],correct:1},
+      {q:'A caller says they\'re from your bank and need your login details to fix a problem. What do you do?',options:['Give them the details — it\'s the bank! 🏦','Hang up and call the bank back on the number on their website 📞','Wait to see if your account gets frozen 😬'],correct:1},
+      {q:'What does "social engineering" mean?',options:['Building bridges and roads 🏗️','Tricking people instead of hacking computers 🎭','A type of computer virus 💻'],correct:1},
+      {q:'Someone asks for your password to "test the system." What do you do?',options:['Give it — it\'s just a test ✅','Refuse — no legitimate test needs your actual password 🚫','Change your password then give them the old one 🔑'],correct:1},
+      {q:'The safest thing to do when you\'re not sure if a request is genuine is:',options:['Just do what they ask to be helpful 😊','Verify through a different, trusted channel first 📞','Ask your friend what they think 👥'],correct:1},
+      {q:'What makes social engineering attacks hard to spot?',options:['They happen very fast ⚡','They use real-looking details and sound convincing 🎭','They only happen at night 🌙'],correct:1},
+    ],
+  },
+};
+
+MODULE_COLUMNS.socialEng = [
+  {key:'name',    label:'CALLER / SENDER'},
+  {key:'purpose', label:'DEPARTMENT'},
+  {key:'request', label:'WHAT THEY WANTED'},
+  {key:'process', label:'HOW THEY ASKED'},
+];
+
+// ─────────────────────────────────────────────────────────────
+// MODULE 7: USB DROP ATTACK
+// ─────────────────────────────────────────────────────────────
+MODULES.usbDrop = {
+  id: 'usbDrop',
+  name: 'USB DROP ATTACK',
+  tools: {
+    correct: 'USB Device Log',
+    decoys: ['Network Traffic Monitor','Process Monitor','File Integrity Monitor','Email Header Analyser','Access Attempt Analyser','Help Desk Log Analyser'],
+  },
+  emailSender: () => pick(['alerts@usb-monitor.net','security@devicewatch.io','it-security@company.com']),
+  emailSubject: () => pick(['Unknown USB Devices Detected','USB Security Alert','Suspicious Device Connections Logged']),
+  emailBody(scenario){
+    return pick([
+      `Hi,\n\nOur security system has detected USB devices being plugged into company computers.\n\nHackers sometimes leave infected USB sticks in car parks or corridors hoping curious staff will plug them in.\n\nPlease review the USB Device Log and flag anything suspicious.\n\nIT Security`,
+      `Hi,\n\nSeveral unknown USB devices have been plugged into computers today. This could be a USB drop attack — where hackers leave infected memory sticks around hoping someone picks them up.\n\nCheck the log below carefully.\n\nSecurity Operations`,
+    ]);
+  },
+  tool: 'usb',
+  toolLabel: '🔌 USB DEVICE LOG',
+  briefing:{
+    title:'USB Drop Attack',
+    tagline:'The danger of unknown USB drives',
+    summary:'A USB drop attack is when a hacker leaves infected USB drives (memory sticks) somewhere people will find them — like in a car park, reception, or on a desk. They\'re often labelled with something tempting, like \"Staff Bonuses\" or \"Confidential.\" That label is the trick — it makes even careful people curious enough to plug it in and find out what\'s inside. The moment they do, the malware can run and infect the computer.',
+    watchFor:'Unknown device names • Devices that auto-run programs • USB sticks left in unusual places • New devices connected outside of working hours',
+    realWorld:'In 2010, the Stuxnet worm — one of the most sophisticated cyberweapons ever built — spread via a USB drop into nuclear facilities in Iran. It worked precisely because someone trusted a USB stick they shouldn\'t have — proof that this trick works even in high-security places.',
+  },
+  generateScenario(params={}){
+    const {numEscalations=pick([1,2,2,2,3]),escalationType=pick(['RED_AMBER','RED_AMBER','RED_RED','AMBER_AMBER']),includeEdgeCase=Math.random()>.3,numItems=6}=params;
+    const devices=[
+      {name:'USB_FOUND_CARPARK',type:'Unknown USB Stick',location:'Car park — found on the ground',time:'08:14',auto:'autorun.inf executed immediately',files:'setup.exe, update.bat',rag:'R',action:'quarantine',note:'Found outside + autorun = almost certainly malicious. Isolate the computer immediately.'},
+      {name:'MYSTERY_STICK_001',type:'Unknown USB Stick',location:'Reception desk — no owner',time:'12:32',auto:'Tried to run hidden_update.exe',files:'hidden_update.exe, invoice.pdf (fake)',rag:'R',action:'quarantine',note:'Unknown device trying to run hidden executables. Classic USB drop attack.'},
+      {name:'FREE_GIFT_USB',type:'USB Stick (branded "Free Gift")',location:'Conference room — left after meeting',time:'14:55',auto:'No autorun',files:'gift_voucher.exe (suspicious)',rag:'R',action:'quarantine',note:'Branded "free gift" USBs left at events are a classic delivery method for malware.'},
+      {name:'UNKNOWN_DEVICE_02',type:'USB Stick',location:'Plugged into finance PC',time:'23:47',auto:'No autorun detected',files:'viewed 3 files then removed',rag:'A',action:'investigate',note:'After-hours + finance PC + unknown device = very suspicious even without autorun.'},
+      {name:'VISITOR_USB_??',type:'Unknown device',location:'Meeting room PC',time:'09:22',auto:'No autorun',files:'accessed network drive briefly',rag:'A',action:'investigate',note:'Visitor USB accessing network drives needs investigation — this shouldn\'t happen.'},
+      {name:'JIM_PERSONAL_USB',type:'Personal USB (staff member)',location:'Jim\'s workstation',time:'11:05',auto:'No autorun',files:'personal_photos.jpg, cv.docx',rag:'A',action:'investigate',note:'Personal USBs are against policy — could accidentally introduce malware even if not intentional.'},
+      {name:'CORP_BACKUP_DRIVE',type:'Company Backup Drive (labelled)',location:'IT server room',time:'02:00',auto:'No autorun',files:'backup files only',rag:'G',action:'ignore',note:'Scheduled backup in IT room using labelled company equipment — expected.'},
+      {name:'IT_INSTALL_DRIVE',type:'IT Department USB (labelled, asset tagged)',location:'IT Support desk',time:'10:30',auto:'No autorun',files:'software_install.msi (verified hash)',rag:'G',action:'ignore',note:'Labelled IT asset with verified software. Normal IT operation.'},
+      {name:'ENCRYPTED_CORP_USB',type:'Company encrypted USB (IronKey)',location:'Finance Director\'s PC',time:'09:15',auto:'No autorun',files:'quarterly_report.xlsx',rag:'G',action:'ignore',note:'Company-issued encrypted USB used by authorised staff during working hours.'},
+      {name:'IT_ASSET_4471',type:'Company USB (asset-tagged)',location:'Helpdesk PC',time:'10:48',auto:'No autorun',files:'driver_pack.zip (verified)',rag:'G',action:'ignore',note:'Tagged company asset used by IT during work hours.'},
+      {name:'PRESENTER_USB',type:'Company presentation USB (labelled)',location:'Meeting room PC',time:'13:30',auto:'No autorun',files:'slides.pptx',rag:'G',action:'ignore',note:'Labelled company device used for a scheduled meeting.'},
+    ];
+    const rp=buildRagProfile(escalationType,numEscalations);
+    const reds=devices.filter(d=>d.rag==='R');
+    const ambs=devices.filter(d=>d.rag==='A');
+    const greens=devices.filter(d=>d.rag==='G');
+    const edgeItem=includeEdgeCase&&ambs.length?[pick(ambs)]:[];
+    const redItems=shuffle(reds).slice(0,rp.filter(r=>r==='R').length);
+    const ambItems=rp.filter(r=>r==='A').length>edgeItem.length?shuffle(ambs.filter(a=>!edgeItem.includes(a))).slice(0,rp.filter(r=>r==='A').length-edgeItem.length):[];
+    const escalated=[...redItems,...ambItems,...edgeItem];
+    const needed=numItems-escalated.length;
+    const greenItems=shuffle(greens).slice(0,needed);
+    return shuffle([...escalated,...greenItems]).map(d=>({
+      name:d.name,purpose:d.type,
+      location:d.location,time:d.time,
+      autorun:d.auto,files:d.files,
+      ragAnswer:d.rag,actionAnswer:d.action,
+      notes:d.note,
+      handled:false,userRag:null,userAction:null,
+    }));
+  },
+  columns:[
+    {key:'name',     label:'DEVICE ID'},
+    {key:'purpose',  label:'TYPE'},
+    {key:'location', label:'WHERE FOUND'},
+    {key:'autorun',  label:'AUTO-RUN?'},
+  ],
+  actions:{R:'quarantine',A:'investigate',G:'ignore'},
+  actionLabels:{quarantine:'🔌 QUARANTINE PC',investigate:'🔍 INVESTIGATE',ignore:'✅ AUTHORISED'},
+  ragRules:{
+    R:'Unknown device + autorun programs OR found in unusual location → RED',
+    A:'Unknown or personal device without autorun — needs checking → AMBER',
+    G:'Company-issued, labelled, authorised device → GREEN',
+  },
+  completionText(){
+    return `<div class="rc info"><h3>USB DROP ATTACK — KEY FACTS</h3>
+    <p>If you find a USB stick, do NOT plug it in — ever. Tell IT security instead. Curiosity is exactly what attackers are counting on.</p>
+    <p style="margin-top:8px;"><strong>Remember:</strong> Autorun = instant infection. After-hours + unknown device = big red flag. Only use company-issued, labelled USB devices.</p></div>`;
+  },
+  reportTeams:{correct:'IT Security & Incident Response',incorrect:'Facilities Management'},
+  plenary:{
+    analogy:'A USB drop attack is like finding a sweet on the floor — it might look fine, but you have no idea what\'s in it or where it\'s been. Most sensible people wouldn\'t eat it. Don\'t plug in unknown USB sticks either!',
+    whatHappened:'Someone left infected USB sticks around the building hoping a staff member would plug one in. The USB automatically ran malicious software the moment it was connected.',
+    keyRule:'Never plug in a USB stick you didn\'t buy yourself or get from IT. If you find one, hand it to IT Security.',
+    realWorld:'Stuxnet, discovered in 2010, used USB drop attacks to destroy nuclear centrifuges in Iran. It was the most sophisticated cyberweapon ever seen at the time.',
+    reportQ:'You find a USB stick in the car park with "STAFF SALARIES 2024" written on it. What do you do?',
+    reportA:'Hand it to IT Security immediately without plugging it in. The label is designed to make you curious!',
+    quiz:[
+      {q:'You find a USB stick in the car park. What do you do?',options:['Plug it in to see what\'s on it 🔌','Hand it straight to IT Security without plugging it in 🛡️','Keep it — finders keepers! 🎁'],correct:1},
+      {q:'What makes a USB drop attack so effective?',options:['USB sticks are very fast ⚡','People are naturally curious and want to see what\'s on the drive 🤔','USB sticks are free 🆓'],correct:1},
+      {q:'Why is an unknown USB stick dangerous even before you open any files?',options:['It uses up your battery faster 🔋','Malware on it can sometimes run automatically, or trick you into running it 💻','It can slow down your WiFi 📶'],correct:1},
+      {q:'A USB stick with a label saying "WAGES - CONFIDENTIAL" is left on your desk. What should you do?',options:['Open it — it might be important! 📂','Report it to IT Security immediately without plugging it in 🚨','Leave it where it is and ignore it 🤷'],correct:1},
+      {q:'Which USB stick is safe to plug in?',options:['A USB you found in the car park 🅿️','A USB given to you as a "free gift" at a conference 🎁','A company-issued, encrypted USB from your IT department 💼'],correct:2},
+      {q:'Why might a hacker label a USB stick "STAFF SALARIES"?',options:['To be helpful and organised 📁','To make you curious so you plug it in 🤔','Because it actually contains salary information 💰'],correct:1},
+      {q:'Stuxnet — one of the most powerful cyberweapons ever — used USB drop attacks. What did it destroy?',options:['The internet 🌐','Nuclear facility centrifuges in Iran ⚛️','Office printers 🖨️'],correct:1},
+      {q:'An unknown USB drive is plugged into a finance computer at 2am. This is:',options:['Normal — maybe someone was working late 🌙','Very suspicious — investigate immediately 🔴','Fine as long as the files look normal 📄'],correct:1},
+      {q:'Personal USB sticks (your own from home) in the office are:',options:['Fine — they\'re yours so you know they\'re safe ✅','Against policy and risky — they might carry malware from home 🚫','Only a problem if they have autorun 🔌'],correct:1},
+    ],
+  },
+};
+
+MODULE_COLUMNS.usbDrop = [
+  {key:'name',     label:'DEVICE ID'},
+  {key:'purpose',  label:'DEVICE TYPE'},
+  {key:'location', label:'WHERE FOUND / CONNECTED'},
+  {key:'autorun',  label:'AUTO-RUN DETECTED?'},
 ];

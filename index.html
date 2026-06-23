@@ -1,3 +1,16 @@
+<!-- ════════════════════════════════════════════════════════════
+     CYBERSHIELD ACADEMY
+     FILE:    index_2026-06-10_v37-DIAGNOSTIC.html
+     ROLE:    Main page (diagnostic build — error bar enabled)
+     ────────────────────────────────────────────────────────────
+     VERSION HISTORY
+     v37   2026-06-22  #ipRetryPanel added inside #ipOverlay (Safari IP trace hang fix)
+     v36   2026-06-22  .eitem.phish red border removed (phishing exception visual spoiler)
+     v35   2026-06-22  Loader ref updated to v37
+     v34   2026-06-22  Loader ref updated to v36
+     v33   2026-06-22  Loader ref updated to v35
+     v26   2026-06-10  Diagnostic build: window.onerror + unhandledrejection error bar added
+     ════════════════════════════════════════════════════════════ -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -54,8 +67,8 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .step.done .snum{background:var(--gk);}
 .sarr{color:rgba(0,255,65,.18);padding:0 4px;font-size:16px;}
 
-/* ── GRID: left 260px | middle flex | right 300px ── */
-#grid{flex:1;min-height:0;display:grid;grid-template-columns:260px 1fr 300px;gap:5px;padding:5px;}
+/* ── GRID: left 300px | right flex ── */
+#grid{flex:1;min-height:0;display:grid;grid-template-columns:300px 1fr;gap:5px;padding:5px;}
 
 /* ── PANEL ── */
 .panel{background:var(--bp);border:1px solid var(--bdr);box-shadow:0 0 12px rgba(0,255,65,.12);border-radius:5px;display:flex;flex-direction:column;overflow:hidden;min-height:0;}
@@ -63,6 +76,17 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .pdot{width:6px;height:6px;border-radius:50%;background:var(--g);box-shadow:0 0 6px var(--g);animation:blink 1.6s ease infinite;flex-shrink:0;}
 .ph-r{margin-left:auto;font-size:10px;color:var(--cyn);border:1px solid rgba(0,245,255,.25);padding:2px 8px;border-radius:2px;}
 
+.eab{display:flex;gap:6px;padding:0 0 5px 0;flex-shrink:0;}
+.eab-btn{flex:1;padding:9px 8px;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:.5px;border-radius:4px;cursor:pointer;border:2px solid;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:5px;min-height:40px;}
+.eab-btn:disabled{opacity:.3;cursor:default;}
+.eab-open{border-color:var(--g);color:var(--g);background:rgba(0,255,65,.06);}
+.eab-open:hover:not(:disabled){background:rgba(0,255,65,.15);}
+.eab-flag{border-color:var(--red);color:var(--red);background:rgba(255,0,64,.06);}
+.eab-flag:hover:not(:disabled){background:rgba(255,0,64,.15);}
+/* right col split */
+#mc{display:flex;flex-direction:column;gap:5px;min-height:0;}
+#emailPanel{flex:1;min-height:0;}
+#toolPanel{flex:1;min-height:0;}
 /* ── LEFT COL ── */
 #lc{display:flex;flex-direction:column;gap:5px;min-height:0;}
 #inboxPanel{flex:0 0 auto;max-height:42%;min-height:100px;}
@@ -73,7 +97,10 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .eitem:hover{border-color:var(--g);background:rgba(0,255,65,.07);}
 .eitem.unread{border-left:3px solid var(--g);}
 .eitem.sel{border-color:var(--g);background:rgba(0,255,65,.09);}
-.eitem.phish{border-left:3px solid var(--red)!important;}
+/* .eitem.phish intentionally has NO distinguishing style — the phishing
+   exception email must look identical to a normal email in the inbox list,
+   otherwise the red border itself gives the answer away before the student
+   even clicks on it. */
 .eitem.done{opacity:.45;cursor:default;}
 .eitem.done:hover{border-color:rgba(0,255,65,.14);background:rgba(0,255,65,.02);}
 .ef{font-size:14px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -182,7 +209,6 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .tselrow{flex-shrink:0;display:flex;gap:7px;align-items:center;padding:8px;border-bottom:1px solid rgba(0,255,65,.15);flex-wrap:wrap;}
 .tsel{flex:1;min-width:160px;background:var(--bp);border:1px solid var(--gd);color:var(--g);font-family:'Share Tech Mono',monospace;font-size:13px;padding:5px 8px;border-radius:3px;cursor:pointer;outline:none;}
 .tsel option{background:#0b160b;}
-#graphCanvas{display:none;flex-shrink:0;height:90px;width:100%;border-bottom:1px solid rgba(0,255,65,.13);}
 .tdata{flex:1;overflow-y:auto;padding:7px;}
 .tsbar{flex-shrink:0;padding:8px 10px;border-top:1px solid rgba(0,255,65,.13);min-height:44px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
 .tph{color:rgba(0,255,65,.28);font-size:13px;text-align:center;margin-top:18px;line-height:1.9;padding:8px;}
@@ -245,7 +271,6 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .iptitle{font-family:'Orbitron',monospace;font-size:20px;color:var(--red);text-shadow:0 0 18px var(--red);text-align:center;letter-spacing:3px;margin-bottom:14px;animation:pulse 1s ease infinite;}
 .ipbig{font-family:'Orbitron',monospace;font-size:44px;color:var(--red);text-shadow:0 0 28px var(--red);text-align:center;line-height:1;margin-bottom:8px;}
 .ipbig.danger{animation:pulse .4s ease infinite;color:#ff6688;}
-#ipMapCanvas{width:100%;height:240px;display:block;border:1px solid rgba(255,0,64,.28);border-radius:5px;background:#010801;}
 .iphopinfo{font-size:13px;color:#ff9999;text-align:center;margin:8px 0;min-height:18px;}
 .ipeasyopts{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;}
 .ipeasy{flex:1;min-width:140px;padding:12px;background:rgba(255,0,64,.07);border:2px solid var(--red);color:var(--red);font-family:'Share Tech Mono',monospace;font-size:14px;cursor:pointer;border-radius:5px;text-align:center;transition:all .18s;letter-spacing:1px;}
@@ -328,7 +353,6 @@ body.alert-mode #sbar{border-bottom-color:var(--red);box-shadow:0 0 32px rgba(25
 .edb-label{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:1px;margin-bottom:4px;}
 .edb-desc{font-size:11px;opacity:.7;line-height:1.5;}
 /* Globe canvas sizing */
-#ipMapCanvas{width:100%;height:260px;display:block;border:1px solid rgba(255,0,64,.28);border-radius:5px;background:#010a01;}
 
 
 /* ── DATA CARDS ── */
@@ -375,9 +399,416 @@ body.alert-mode #sbar{border-bottom-color:var(--red);box-shadow:0 0 32px rgba(25
 /* Voice toggle */
 
 
+
+/* ══ END SPLASH ══════════════════════════════════════════════ */
+#endSplash{display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.96);justify-content:center;align-items:center;padding:10px;}
+#endSplash.open{display:flex;}
+.es-box{background:var(--bp);border:2px solid var(--cyn);box-shadow:0 0 60px rgba(0,245,255,.3),inset 0 0 40px rgba(0,245,255,.03);border-radius:10px;width:100%;max-width:560px;max-height:94vh;display:flex;flex-direction:column;overflow:hidden;}
+.es-header{background:linear-gradient(180deg,rgba(0,245,255,.07),rgba(0,0,0,0));padding:20px 22px 14px;text-align:center;flex-shrink:0;}
+.es-run-tag{font-family:'Orbitron',monospace;font-size:11px;color:rgba(0,245,255,.4);letter-spacing:3px;margin-bottom:10px;}
+.es-emoji{font-size:52px;line-height:1.1;margin-bottom:6px;}
+.es-gname{font-family:'Orbitron',monospace;font-size:18px;letter-spacing:3px;font-weight:900;margin-bottom:10px;}
+.es-xp-row{display:flex;align-items:baseline;justify-content:center;gap:6px;margin-bottom:2px;}
+.es-xp-num{font-family:'Orbitron',monospace;font-size:42px;color:var(--g);text-shadow:0 0 20px var(--g);letter-spacing:2px;}
+.es-xp-lbl{font-family:'Orbitron',monospace;font-size:16px;color:rgba(0,255,65,.5);}
+.es-xp-break{font-size:12px;color:rgba(0,255,65,.35);margin-bottom:10px;}
+.es-stars{font-size:26px;letter-spacing:4px;margin-bottom:10px;}
+.s-on{color:#ffd700;text-shadow:0 0 12px #ffd700;}.s-off{color:rgba(255,255,255,.12);}
+#esNewTrophies{background:rgba(255,170,0,.08);border:1px solid rgba(255,170,0,.3);border-radius:6px;padding:10px 14px;margin-bottom:4px;}
+.es-nt-lbl{font-family:'Orbitron',monospace;font-size:9px;color:var(--amb);letter-spacing:3px;margin-bottom:8px;text-align:center;}
+.es-nt-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+.es-nt-badge{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--amb);animation:trophyPop .5s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes trophyPop{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}
+.es-tabs{display:flex;border-bottom:1px solid rgba(0,255,65,.15);flex-shrink:0;}
+.es-tab{flex:1;padding:10px;text-align:center;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:1px;color:rgba(0,255,65,.4);cursor:pointer;transition:all .18s;}
+.es-tab:hover{color:var(--g);background:rgba(0,255,65,.05);}
+.es-tab.on{color:var(--cyn);border-bottom:2px solid var(--cyn);background:rgba(0,245,255,.05);}
+.es-content{flex:1;overflow-y:auto;padding:16px;}
+.es-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+.es-stat{background:rgba(0,0,0,.3);border:1px solid rgba(0,255,65,.12);border-radius:5px;padding:10px 6px;text-align:center;}
+.es-sn{font-family:'Orbitron',monospace;font-size:20px;margin-bottom:4px;}
+.es-sl{font-size:9px;color:rgba(0,255,65,.4);letter-spacing:1px;}
+.es-break{background:rgba(0,0,0,.25);border-radius:5px;padding:12px 14px;font-size:13px;margin-bottom:12px;}
+.es-brow{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(0,255,65,.07);color:rgba(0,255,65,.65);}
+.es-brow:last-child{border:none;}
+.es-brow-tot{font-family:'Orbitron',monospace;font-size:14px;padding-top:8px;color:var(--g)!important;}
+.es-badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.es-badge{background:rgba(0,255,65,.07);border:1px solid rgba(0,255,65,.2);border-radius:20px;padding:5px 12px;font-size:12px;}
+.es-trophy-count{font-family:'Orbitron',monospace;font-size:11px;color:rgba(0,245,255,.5);letter-spacing:2px;margin-bottom:12px;text-align:center;}
+.es-trophy-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.es-tcell{background:rgba(0,0,0,.3);border:1px solid rgba(0,255,65,.1);border-radius:6px;padding:10px 8px;text-align:center;opacity:.4;}
+.es-tcell.got{opacity:1;border-color:rgba(0,255,65,.25);}
+.es-tcell.new{border-color:var(--amb)!important;box-shadow:0 0 16px rgba(255,170,0,.25);opacity:1;}
+.es-ticon{font-size:22px;margin-bottom:5px;}
+.es-tname{font-family:'Orbitron',monospace;font-size:9px;color:var(--g);letter-spacing:.5px;margin-bottom:3px;}
+.es-tdesc{font-size:10px;color:rgba(0,255,65,.45);line-height:1.5;}
+.es-tnew{font-size:9px;color:var(--amb);font-family:'Orbitron',monospace;letter-spacing:1px;margin-top:4px;}
+.es-run-grid{font-size:12px;}
+.es-rh{display:grid;grid-template-columns:2fr 2.5fr 1.5fr 2fr 1fr;gap:6px;padding:6px 8px;font-family:'Orbitron',monospace;font-size:9px;color:rgba(0,255,65,.4);letter-spacing:1px;border-bottom:1px solid rgba(0,255,65,.15);}
+.es-rrow{display:grid;grid-template-columns:2fr 2.5fr 1.5fr 2fr 1fr;gap:6px;padding:8px;border-bottom:1px solid rgba(0,255,65,.07);color:rgba(0,255,65,.65);}
+.es-rrow.cur{background:rgba(0,245,255,.06);color:var(--cyn);}
+.es-rrow.best{border-left:3px solid #ffd700;}
+.es-empty{text-align:center;padding:24px;opacity:.4;font-size:14px;}
+.es-play{flex-shrink:0;padding:12px 20px 16px;border-top:1px solid rgba(0,255,65,.12);}
+.es-play .btn{width:100%;padding:13px;font-size:15px;}
+/* plen-allclear for all-clear message */
+.plen-allclear{padding:12px;text-align:center;font-size:15px;color:var(--g);border:1px solid rgba(0,255,65,.2);border-radius:5px;background:rgba(0,255,65,.05);margin:12px 0;}
+
+/* ═══════════════════════════════════════════════════════════════
+   CUSTOM SCROLLBARS — all panels
+   ═══════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:rgba(0,0,0,.25);border-radius:3px;}
+::-webkit-scrollbar-thumb{background:rgba(0,255,65,.22);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,255,65,.45);}
+*{scrollbar-width:thin;scrollbar-color:rgba(0,255,65,.22) rgba(0,0,0,.25);}
+
+/* ═══════════════════════════════════════════════════════════════
+   VIEWPORT — use dynamic viewport height where supported
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  --app-h: 100vh;
+  --sbar-h: 38px;
+  --step-h: 34px;
+  --bnav-h: 0px;   /* set to 56px on mobile */
+}
+@supports(height:100dvh){ :root{ --app-h:100dvh; } }
+html,body{ height:var(--app-h); }
+#app{ height:calc(var(--app-h) - var(--sbar-h) - var(--step-h) - var(--bnav-h)); }
+#grid{ height:100%; }
+
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE BOTTOM NAV — hidden on desktop
+   ═══════════════════════════════════════════════════════════════ */
+#bottomNav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;
+  height:56px;
+  background:rgba(0,8,0,.97);
+  border-top:1px solid rgba(0,255,65,.2);
+  z-index:100;
+  padding:0 env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);
+}
+.bnav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;font-size:10px;color:rgba(0,255,65,.4);
+  font-family:'Share Tech Mono',monospace;border:none;background:none;cursor:pointer;
+  padding:6px 0;transition:color .18s;letter-spacing:.5px;
+  -webkit-tap-highlight-color:transparent;
+}
+.bnav-btn .bnav-ico{font-size:20px;line-height:1;}
+.bnav-btn.on{color:var(--g);}
+.bnav-btn.on .bnav-ico{filter:drop-shadow(0 0 6px var(--g));}
+/* notification dot on nav button */
+.bnav-btn .bnav-dot{
+  position:absolute;top:4px;right:calc(50% - 14px);
+  width:8px;height:8px;border-radius:50%;
+  background:var(--amb);display:none;
+  animation:navPulse 1s ease infinite;
+}
+.bnav-btn.alert .bnav-dot{display:block;}
+@keyframes navPulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* ═══════════════════════════════════════════════════════════════
+   PHONE PORTRAIT  < 480px
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width:479px){
+  :root{ --bnav-h:56px; }
+  html,body{ font-size:15px; }
+
+  #bottomNav{ display:flex; }
+
+  /* Single-panel view: show only the active column */
+  #grid{ display:block;padding:4px;overflow:hidden; }
+  #lc,#mc,#rc{
+    display:none;position:absolute;
+    top:calc(var(--sbar-h) + var(--step-h));
+    left:0;right:0;
+    bottom:var(--bnav-h);
+    padding:4px;overflow:hidden;
+  }
+  #lc.m-show,#mc.m-show,#rc.m-show{ display:flex;flex-direction:column; }
+
+  /* Status bar — compact */
+  #sbar{ padding:4px 8px;gap:6px; }
+  .slogo{ font-size:11px;letter-spacing:1px; }
+  #simStatus{ display:none; }
+  .ssep{ display:none; }
+  .sitem span.slbl{ display:none; }
+
+  /* Step bar — icons only */
+  #stepbar{ padding:0 4px;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch; }
+  .step{ font-size:0;padding:0 6px;white-space:nowrap; }
+  .step .snum{ font-size:11px;width:20px;height:20px; }
+  .step::after{ content:attr(data-emoji);font-size:14px; }
+  .sarr{ font-size:12px;padding:0 2px; }
+
+  /* Touch-friendly buttons */
+  .btn{ min-height:44px; }
+  .ebtns .btn{ min-height:36px;font-size:11px; }
+
+  /* Panels fill height */
+  #inboxPanel{ max-height:45%;flex-shrink:0; }
+  #emailPanel{ flex:1;min-height:0; }
+  #toolPanel{ flex:1;min-height:0; }
+  #chatPanel{ flex:1;min-height:0; }
+
+  /* Plenary modal fits mobile */
+  .plen-box{ max-height:calc(var(--app-h) - 20px);border-radius:6px; }
+
+  /* End splash mobile */
+  .es-box{ max-height:calc(var(--app-h) - 10px);border-radius:6px; }
+  .es-xp-num{ font-size:32px; }
+  .es-gname{ font-size:14px; }
+  .es-stat-grid{ grid-template-columns:repeat(2,1fr); }
+  .es-trophy-grid{ grid-template-columns:repeat(2,1fr); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PHONE LANDSCAPE / LARGE PHONE  480–767px
+   ═══════════════════════════════════════════════════════════════ */
+@media (min-width:480px) and (max-width:767px){
+  :root{ --bnav-h:52px; }
+  html,body{ font-size:14px; }
+
+  #bottomNav{ display:flex; }
+
+  #grid{ display:block;padding:4px; }
+  #lc,#mc,#rc{
+    display:none;position:absolute;
+    top:calc(var(--sbar-h) + var(--step-h));
+    left:0;right:0;
+    bottom:var(--bnav-h);
+    padding:4px;
+  }
+  #lc.m-show,#mc.m-show,#rc.m-show{ display:flex;flex-direction:column; }
+
+  #sbar{ padding:4px 10px;gap:8px; }
+  .slogo{ font-size:11px; }
+  #simStatus{ display:none; }
+
+  /* Compact step bar */
+  #stepbar{ padding:0 6px;gap:2px; }
+  .step{ font-size:11px;padding:0 5px; }
+  .step .snum{ width:18px;height:18px;font-size:10px; }
+
+  .btn{ min-height:40px; }
+  .plen-box{ max-height:calc(var(--app-h) - 20px); }
+  .es-stat-grid{ grid-template-columns:repeat(2,1fr); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TABLET PORTRAIT  768–1023px
+   ═══════════════════════════════════════════════════════════════ */
+@media (min-width:768px) and (max-width:1023px){
+  html,body{ font-size:15px; }
+
+  /* 2-column: left (inbox+email) | right (tool) — chat hidden in tab */
+  #grid{ grid-template-columns:260px 1fr;gap:5px;padding:5px; }
+  #rc{ display:none; } /* chat hidden — accessible via chat tab or toggle */
+
+  /* Inject a chat toggle into the step bar area */
+  #sbar{ gap:8px; }
+  .slogo{ font-size:12px; }
+
+  /* Slightly tighter */
+  .dcard{ padding:8px 10px; }
+  .cbub{ font-size:14px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TABLET LANDSCAPE / SMALL LAPTOP  1024–1279px
+   ═══════════════════════════════════════════════════════════════ */
+@media (min-width:1024px) and (max-width:1279px){
+  #grid{ grid-template-columns:220px 1fr 240px; }
+  html,body{ font-size:15px; }
+  .ef{ font-size:13px; }
+  .es{ font-size:12px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   STANDARD LAPTOP  1280–1599px  (existing layout, just confirm)
+   ═══════════════════════════════════════════════════════════════ */
+@media (min-width:1280px) and (max-width:1599px){
+  #grid{ grid-template-columns:260px 1fr 300px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LARGE DESKTOP  1600px+
+   ═══════════════════════════════════════════════════════════════ */
+@media (min-width:1600px){
+  #grid{ grid-template-columns:300px 1fr 340px; }
+  html,body{ font-size:17px; }
+  .plen-box{ max-width:640px; }
+  .es-box{ max-width:620px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PORTRAIT ORIENTATION — any device
+   ═══════════════════════════════════════════════════════════════ */
+@media (orientation:portrait) and (max-width:1023px){
+  /* Ensure modals don't overflow */
+  .plen-box,.es-box{ max-height:90dvh;max-height:90vh; }
+  /* RAG modal compact */
+  .ragcs{ gap:8px; }
+  .ragc{ padding:10px 8px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SAFE AREA (notched phones)
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width:767px){
+  #sbar{
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
+  }
+}
+
+.ipeasy-hard{
+  font-size:15px !important;
+  letter-spacing:2px;
+  border-color:var(--amb) !important;
+  color:var(--amb) !important;
+  animation:hardPulse 1.5s ease infinite;
+}
+@keyframes hardPulse{0%,100%{box-shadow:0 0 6px rgba(255,170,0,.3);}50%{box-shadow:0 0 16px rgba(255,170,0,.7);}}
+
+
+
+
+/* ── EMAIL VIEW — inline From/Subject ── */
+.evmeta{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;padding:8px 10px;background:rgba(0,255,65,.04);border-bottom:1px solid rgba(0,255,65,.12);font-size:11px;}
+.evlbl{color:rgba(0,255,65,.5);font-size:10px;letter-spacing:.08em;text-transform:uppercase;flex-shrink:0;}
+.evsep{margin-left:10px;}
+.evval{color:#c8ffc8;flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.evbig{color:#e8ffe8;font-weight:600;}
+.evbody{padding:10px;font-size:12px;line-height:1.55;color:#b0d8b0;white-space:pre-wrap;word-break:break-word;}
+
+/* ═══════════════════════════════════════════════════════
+   OVERRIDES — these win over all earlier rules
+   ═══════════════════════════════════════════════════════ */
+
+/* Email view — From and Subject on one line */
+.evmeta{display:flex;flex-wrap:wrap;align-items:baseline;
+        gap:3px 10px;padding:8px 12px;
+        background:rgba(0,255,65,.04);
+        border-bottom:1px solid rgba(0,255,65,.12);}
+.evlbl{font-size:10px;color:rgba(0,255,65,.5);
+       letter-spacing:.07em;text-transform:uppercase;flex-shrink:0;
+       margin:0;padding:0;}
+.evsep{margin-left:8px;}
+.evval{font-size:13px;color:#c8ffc8;flex-shrink:1;
+       min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+       margin:0;}
+.evbig{color:#e8ffe8;font-weight:600;}
+.evbody{padding:10px 12px;font-size:12px;line-height:1.6;
+        color:#b0d8b0;white-space:pre-wrap;word-break:break-word;}
+
+/* Email pane smaller, tool pane larger */
+#emailPanel{flex:0 0 auto !important;min-height:120px;}
+#toolPanel{flex:1 !important;min-height:0;}
+
+/* IP trace overlay — never taller than viewport */
+.ipbox{max-height:92vh;overflow-y:auto;}
+#ipMapCanvas{background:#010d03;}
+
+
+/* ── XP POPUP ANIMATION ─────────────────────────── */
+.xp-pop{position:fixed;left:50%;top:45%;z-index:9999;pointer-events:none;text-align:center;opacity:0;transform:translate(-50%,0);}
+.xp-pop-amt{font-family:'Orbitron',monospace;font-size:56px;font-weight:900;color:#00ff41;text-shadow:0 0 40px #00ff41,0 0 80px #00ff41,0 0 120px rgba(0,255,65,.4);animation:xpPulse .35s cubic-bezier(.17,.67,.3,1.4);}
+.xp-pop-lbl{font-family:'Share Tech Mono',monospace;font-size:13px;
+            color:rgba(0,255,65,.7);letter-spacing:.15em;margin-top:4px;}
+@keyframes xpPulse{0%{transform:scale(.6)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+
+/* ── ATTACK BRIEFING MODAL ──────────────────────── */
+.brief-box{background:#050f05;border:2px solid var(--grn);
+           box-shadow:0 0 60px rgba(0,255,65,.4);
+           border-radius:8px;padding:28px;width:min(640px,94vw);
+           max-height:88vh;overflow-y:auto;}
+.brief-flash{font-family:'Orbitron',monospace;font-size:13px;
+             color:var(--grn);letter-spacing:.2em;text-align:center;
+             animation:pulse .8s ease infinite;margin-bottom:14px;}
+.brief-title{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;
+             color:#00ff41;text-shadow:0 0 20px #00ff41;text-align:center;
+             margin-bottom:4px;}
+.brief-tagline{font-size:13px;color:rgba(0,255,65,.6);text-align:center;
+               font-style:italic;margin-bottom:18px;}
+.brief-section{margin-bottom:14px;}
+.brief-label{font-size:10px;color:rgba(0,255,65,.5);letter-spacing:.1em;
+             text-transform:uppercase;margin-bottom:5px;}
+.brief-text{font-size:13px;color:#b8e8b8;line-height:1.65;}
+.brief-watch{color:#ffe082;font-size:12px;}
+.brief-real{color:#b0d0ff;font-size:12px;font-style:italic;}
+.brief-btn{width:100%;padding:14px;margin-top:18px;font-size:14px;}
+
+
+/* ── IP MAP WRAPPER — aspect ratio locks canvas to SVG ─── */
+#ipMapWrap{position:relative;width:100%;aspect-ratio:720/360;max-height:240px;overflow:hidden;}
+#ipMapWrap svg,#ipMapWrap canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
+#ipMapCanvas{background:#010d03;}
+
+
+/* ── XP EARNED MODAL ─────────────────────────────────────── */
+.xp-modal-box{background:#030f03;border:2px solid var(--grn);
+              box-shadow:0 0 80px rgba(0,255,65,.5);border-radius:10px;
+              padding:36px 44px;text-align:center;min-width:260px;}
+.xp-modal-ring{width:130px;height:130px;border-radius:50%;margin:0 auto 16px;
+               border:3px solid #00ff41;display:flex;flex-direction:column;
+               justify-content:center;align-items:center;
+               box-shadow:0 0 40px rgba(0,255,65,.6),inset 0 0 30px rgba(0,255,65,.1);
+               animation:xpRingPulse .6s ease;}
+.xp-modal-amt{font-family:'Orbitron',monospace;font-size:44px;font-weight:900;
+              color:#00ff41;text-shadow:0 0 30px #00ff41;line-height:1;}
+.xp-modal-unit{font-family:'Share Tech Mono',monospace;font-size:13px;
+               color:rgba(0,255,65,.6);letter-spacing:.2em;margin-top:2px;}
+.xp-modal-lbl{font-family:'Orbitron',monospace;font-size:14px;color:#c8ffc8;
+              margin-bottom:20px;letter-spacing:.05em;}
+.xp-modal-ok{width:100%;padding:12px;font-size:13px;letter-spacing:.1em;}
+@keyframes xpRingPulse{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
+
+
+/* ── UNIFIED GAME MODAL ───────────────────────────────────── */
+.gm-box{background:#040f04;border:2px solid var(--g);box-shadow:0 0 70px rgba(0,255,65,.5);
+        border-radius:10px;padding:30px 36px;width:min(580px,92vw);max-height:88vh;
+        overflow-y:auto;text-align:center;animation:gmPop .4s cubic-bezier(.17,.67,.3,1.4);}
+@keyframes gmPop{0%{transform:scale(.75);opacity:0}100%{transform:scale(1);opacity:1}}
+.gm-xp-ring{width:120px;height:120px;border-radius:50%;margin:0 auto 14px;border:3px solid var(--g);
+            display:flex;flex-direction:column;justify-content:center;align-items:center;
+            box-shadow:0 0 40px rgba(0,255,65,.6),inset 0 0 26px rgba(0,255,65,.12);}
+.gm-xp-amt{font-family:'Orbitron',monospace;font-size:42px;font-weight:900;color:var(--g);text-shadow:0 0 26px var(--g);line-height:1;}
+.gm-xp-unit{font-family:'Share Tech Mono',monospace;font-size:12px;color:rgba(0,255,65,.6);letter-spacing:.2em;}
+.gm-title{font-family:'Orbitron',monospace;font-size:16px;color:#d8ffd8;margin-bottom:18px;}
+.gm-flash{font-family:'Orbitron',monospace;font-size:12px;color:var(--g);letter-spacing:.2em;animation:pulse .8s ease infinite;margin-bottom:12px;}
+.gm-brief-title{font-family:'Orbitron',monospace;font-size:21px;font-weight:900;color:var(--g);text-shadow:0 0 18px var(--g);margin-bottom:3px;}
+.gm-brief-tag{font-size:13px;color:rgba(0,255,65,.6);font-style:italic;margin-bottom:16px;}
+.gm-brief-sec{margin-bottom:12px;text-align:left;}
+.gm-brief-lbl{font-size:10px;color:rgba(0,255,65,.5);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;}
+.gm-brief-txt{font-size:13px;color:#b8e8b8;line-height:1.6;}
+.gm-ok{width:100%;padding:13px;margin-top:18px;font-size:13px;letter-spacing:.08em;}
+
 </style>
 </head>
 <body>
+<div id="__errbox" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#600;color:#fff;font-family:monospace;font-size:12px;padding:10px;white-space:pre-wrap;max-height:40vh;overflow:auto;"></div>
+<script>
+window.addEventListener('error',function(e){
+  var b=document.getElementById('__errbox');
+  if(b){b.style.display='block';b.textContent+='ERROR: '+e.message+' | at '+(e.filename||'').split('/').pop()+':'+e.lineno+':'+e.colno+'\n\n';}
+});
+window.addEventListener('unhandledrejection',function(e){
+  var b=document.getElementById('__errbox');
+  if(b){b.style.display='block';b.textContent+='PROMISE ERROR: '+(e.reason&&e.reason.message||e.reason)+'\n\n';}
+});
+window.addEventListener('load',function(){
+  setTimeout(function(){
+    var b=document.getElementById('__errbox');
+    if(typeof refreshInbox!=='function'){
+      if(b){b.style.display='block';b.textContent+='WARNING: refreshInbox is NOT defined - the engine script did not load. Check file names match exactly and all files are in the same folder.\n\n';}
+    }
+  },1500);
+});
+</script>
+
 <canvas id="matrixCanvas"></canvas>
 <div id="app">
 
@@ -395,25 +826,31 @@ body.alert-mode #sbar{border-bottom-color:var(--red);box-shadow:0 0 32px rgba(25
 </div>
 
 <!-- STEP BAR -->
+<div id="app">
 <div id="stepbar">
-  <div class="step" id="st1"><div class="snum">1</div>📧 Read Email</div>
+  <div class="step" id="st1" data-emoji="📧"><div class="snum">1</div>📧 Read Email</div>
   <div class="sarr">›</div>
-  <div class="step" id="st2"><div class="snum">2</div>🔧 Pick a Tool</div>
+  <div class="step" id="st2" data-emoji="🔧"><div class="snum">2</div>🔧 Pick a Tool</div>
   <div class="sarr">›</div>
-  <div class="step" id="st3"><div class="snum">3</div>🔍 Look at Clues</div>
+  <div class="step" id="st3" data-emoji="🔍"><div class="snum">3</div>🔍 Look at Clues</div>
   <div class="sarr">›</div>
-  <div class="step" id="st4"><div class="snum">4</div>🚦 Decide &amp; Act</div>
+  <div class="step" id="st4" data-emoji="🚦"><div class="snum">4</div>🚦 Decide &amp; Act</div>
   <div class="sarr">›</div>
-  <div class="step" id="st5"><div class="snum">5</div>📋 Send Report</div>
+  <div class="step" id="st5" data-emoji="📋"><div class="snum">5</div>📋 Send Report</div>
 </div>
 
 <!-- GRID -->
 <div id="grid">
 
-  <!-- LEFT: refresh + inbox + email/results -->
+  <!-- LEFT: refresh + action bar + inbox + chat -->
   <div id="lc">
     <div id="refreshRow">
       <button id="btnRefresh" onclick="refreshInbox()">⟳ CHECK FOR NEW EMAILS</button>
+    </div>
+    <!-- Open / Report buttons — always visible above inbox -->
+    <div class="eab">
+      <button id="btnOpenEmail" class="eab-btn eab-open" onclick="actOnSelectedEmail('open')" disabled>📂 OPEN EMAIL</button>
+      <button id="btnFlagEmail" class="eab-btn eab-flag" onclick="actOnSelectedEmail('report')" disabled>🚩 REPORT EMAIL</button>
     </div>
     <div class="panel" id="inboxPanel">
       <div class="ph"><div class="pdot"></div>📬 YOUR EMAILS</div>
@@ -423,7 +860,16 @@ body.alert-mode #sbar{border-bottom-color:var(--red);box-shadow:0 0 32px rgba(25
         </div>
       </div>
     </div>
-    <div class="panel" id="emailPanel" style="flex:1;min-height:0;">
+    <!-- Team chat below inbox -->
+    <div class="panel" id="chatPanel">
+      <div class="ph"><div class="pdot"></div>👥 YOUR TEAM</div>
+      <div class="cmsgs" id="chatMsgs"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: email/results (top) + investigation tool (bottom) -->
+  <div id="mc">
+    <div class="panel" id="emailPanel">
       <div class="tbar">
         <div class="tbtn on" id="tabE" onclick="showTab('E')">📧 EMAIL</div>
         <div class="tbtn"    id="tabR" onclick="showTab('R')">📊 RESULTS</div>
@@ -440,29 +886,16 @@ body.alert-mode #sbar{border-bottom-color:var(--red);box-shadow:0 0 32px rgba(25
         <div id="resultsView" style="color:rgba(0,255,65,.45);font-size:15px;">Your results will show here after each mission.</div>
       </div>
     </div>
-  </div>
-
-  <!-- MIDDLE: investigation tool -->
-  <div id="mc">
-    <div class="panel" id="toolPanel" style="flex:1;min-height:0;">
+    <div class="panel" id="toolPanel">
       <div class="ph"><div class="pdot"></div>🔬 INVESTIGATION TOOL<span class="ph-r" id="scenProg"></span></div>
       <div class="tselrow">
         <select class="tsel" id="toolSel"><option value="">— Choose your investigation tool —</option></select>
         <button class="btn btn-g btn-orb" onclick="loadTool()">▶ LOAD TOOL</button>
       </div>
-      <canvas id="graphCanvas"></canvas>
-      <div class="tdata" id="toolData">
-        <div class="tph">📧 First click your email on the left and read it.<br>Then pick the right tool above and click <strong>▶ LOAD TOOL</strong>!</div>
+            <div class="tdata" id="toolData">
+        <div class="tph">📧 Click your email on the left, then pick the right tool and click <strong>▶ LOAD TOOL</strong>!</div>
       </div>
-      <div class="tsbar" id="toolBar"><span class="bhint">👈 Click your email first to get started!</span></div>
-    </div>
-  </div>
-
-  <!-- RIGHT: team chat -->
-  <div id="rc">
-    <div class="panel" id="chatPanel" style="flex:1;min-height:0;">
-      <div class="ph"><div class="pdot"></div>👥 YOUR TEAM</div>
-      <div class="cmsgs" id="chatMsgs"></div>
+      <div class="tsbar" id="toolBar"><span class="bhint">👈 Click your email first!</span></div>
     </div>
   </div>
 
@@ -470,12 +903,18 @@ body.alert-mode #sbar{border-bottom-color:var(--red);box-shadow:0 0 32px rgba(25
 </div><!-- /app -->
 
 
+
+<!-- UNIFIED GAME MODAL (XP, briefing, etc) -->
+<div id="gameModal" style="display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.9);justify-content:center;align-items:center;">
+  <div class="gm-box" id="gameModalBody"></div>
+</div>
+
 <!-- WELCOME MODAL -->
 <div id="welcomeModal">
   <canvas id="wm-matrix" style="position:absolute;inset:0;width:100%;height:100%;opacity:.07;pointer-events:none;"></canvas>
   <div class="wm-logo">CYBERSHIELD<br>ACADEMY</div>
   <div class="wm-sub">CYBER DETECTIVE TRAINING</div>
-  <button class="wm-btn" onclick="launchMission()">▶ START TRAINING</button>
+  <button class="wm-btn" onclick="this.closest('#welcomeModal').style.display='none';if(typeof launchMission==='function')launchMission();">▶ START TRAINING</button>
   <div class="wm-hint">Click to begin!</div>
 </div>
 
@@ -543,10 +982,17 @@ body.alert-mode #sbar{border-bottom-color:var(--red);box-shadow:0 0 32px rgba(25
 <div id="plenaryModal">
   <div class="plen-box">
     <div class="plen-title" id="plenTitle">🔍 MISSION DEBRIEF</div>
-    <div id="plenContent"></div>
-    <div id="plenReport"></div>
-    <div id="plenQuiz"></div>
-    <button id="plenContinue" onclick="closePlenary()">▶ NEXT MISSION</button>
+    <!-- PHASE 1: debrief + report -->
+    <div id="plenPhase1">
+      <div id="plenContent"></div>
+      <div id="plenReport"></div>
+      <button id="plenToQuiz" onclick="plenPhase2()" style="display:none;width:100%;padding:12px;margin-top:12px;font-size:14px;background:rgba(0,245,255,.08);border:2px solid var(--cyn);color:var(--cyn);font-family:'Orbitron',monospace;cursor:pointer;border-radius:5px;letter-spacing:1px;">🧠 QUIZ TIME →</button>
+    </div>
+    <!-- PHASE 2: quiz only -->
+    <div id="plenPhase2" style="display:none">
+      <div id="plenQuiz"></div>
+      <button id="plenContinue" onclick="closePlenary()" style="display:none;width:100%;padding:14px;margin-top:14px;font-size:15px;background:linear-gradient(135deg,rgba(0,245,255,.1),rgba(0,245,255,.2));border:2px solid var(--cyn);color:var(--cyn);font-family:'Orbitron',monospace;cursor:pointer;border-radius:5px;letter-spacing:2px;text-shadow:0 0 8px var(--cyn);">▶ NEXT MISSION</button>
+    </div>
   </div>
 </div>
 
@@ -565,7 +1011,10 @@ body.alert-mode #sbar{border-bottom-color:var(--red);box-shadow:0 0 32px rgba(25
         <div class="ip-city-label" id="ipCurrentCity">Waiting for trace…</div>
         <div class="ip-ip-display" id="ipCurrentIP">—</div>
       </div>
-      <canvas id="ipMapCanvas"></canvas>
+      <div id="ipMapWrap" style="position:relative;width:100%;border-radius:4px;overflow:hidden;">
+      
+      <canvas id="ipMapCanvas" style="position:absolute;inset:0;width:100%;height:100%;background:transparent;"></canvas>
+    </div>
       <div class="iphopinfo" id="ipHopInfo">Initialising trace…</div>
       <div class="ipeasyopts" id="ipEasyOpts"></div>
 
@@ -575,21 +1024,105 @@ body.alert-mode #sbar{border-bottom-color:var(--red);box-shadow:0 0 32px rgba(25
       <div class="ipresult" id="ipResultInner"></div>
       <button class="btn btn-g btn-orb" style="width:100%;padding:12px;margin-top:14px;font-size:13px;" onclick="closeIPTrace()">CONTINUE MISSION</button>
     </div>
+    <!-- Retry panel — lives INSIDE the overlay so no z-index or touch issues on iOS -->
+    <div id="ipRetryPanel" style="display:none;text-align:center;">
+      <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--red);margin-bottom:10px;">&#9888; TRACE INTERRUPTED</div>
+      <div id="ipRetryReason" style="font-size:13px;color:#fff;margin-bottom:16px;"></div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-g btn-orb" style="flex:1;padding:12px;" onclick="handleIPRetry()">&#128260; TRY AGAIN (45s)</button>
+        <button class="btn btn-sm btn-d" style="flex:1;padding:12px;" onclick="handleIPGiveUp()">GIVE UP</button>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- END OVERLAY -->
-<div id="endOverlay">
-  <div class="endbox">
-    <div class="endt">🏆 TRAINING COMPLETE!</div>
-    <div id="endContent"></div>
-    <button class="btn btn-g btn-orb" style="width:100%;padding:12px;margin-top:20px;font-size:15px;" onclick="resetAll()">▶ PLAY AGAIN</button>
+<!-- END OVERLAY (kept as fallback) -->
+<div id="endOverlay" style="display:none;"></div>
+
+<!-- END SPLASH — gamification screen -->
+<div id="endSplash">
+  <div class="es-box">
+    <div class="es-header">
+      <div class="es-run-tag" id="esRunNum">RUN #1</div>
+      <div id="esGrade"></div>
+      <div class="es-xp-row"><span class="es-xp-num" id="esXPNum">0</span><span class="es-xp-lbl">XP</span></div>
+      <div class="es-xp-break" id="esXPBreak"></div>
+      <div class="es-stars" id="esStars"></div>
+      <div id="esNewTrophies"></div>
+    </div>
+    <div class="es-tabs">
+      <div class="es-tab on" id="esTab_results"  onclick="esTab('results')">📊 RESULTS</div>
+      <div class="es-tab"    id="esTab_trophies" onclick="esTab('trophies')">🏆 CABINET</div>
+      <div class="es-tab"    id="esTab_runs"     onclick="esTab('runs')">📈 HISTORY</div>
+    </div>
+    <div class="es-content" id="esCont_results"></div>
+    <div class="es-content" id="esCont_trophies" style="display:none"></div>
+    <div class="es-content" id="esCont_runs"     style="display:none"></div>
+    <div class="es-play"><button class="btn btn-g btn-orb" onclick="resetAll()">▶ PLAY AGAIN</button></div>
   </div>
 </div>
 
-<script src="sounds.js"></script>
-<script src="modules.js"></script>
-<script src="chat-data.js"></script>
-<script src="engine.js"></script>
+
+<!-- All file versions managed in loader_2026-06-10_v38.js -->
+<script src="loader.js"></script>
+
+
+
+
+<!-- MOBILE BOTTOM NAV -->
+<nav id="bottomNav">
+  <button class="bnav-btn on" data-col="lc" onclick="mobileTab('lc')">
+    <span class="bnav-ico">📬</span>
+    <span>INBOX</span>
+    <span class="bnav-dot"></span>
+  </button>
+  <button class="bnav-btn" data-col="mc" onclick="mobileTab('mc')">
+    <span class="bnav-ico">🔬</span>
+    <span>TOOL</span>
+    <span class="bnav-dot"></span>
+  </button>
+  <button class="bnav-btn" data-col="rc" onclick="mobileTab('rc')">
+    <span class="bnav-ico">💬</span>
+    <span>CHAT</span>
+    <span class="bnav-dot"></span>
+  </button>
+</nav>
+
+<script>
+// ── MOBILE TAB SWITCHING ──────────────────────────────────────
+function mobileTab(col){
+  if(window.innerWidth >= 480) return;
+  ['lc','mc','rc'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.classList.toggle('m-show',id===col);
+  });
+  document.querySelectorAll('.bnav-btn').forEach(b=>{
+    b.classList.toggle('on', b.dataset.col===col);
+  });
+}
+
+// Called from setStep() — brings the right panel forward on mobile
+function mobileAutoTab(step){
+  if(window.innerWidth >= 480) return;
+  if(step===1) mobileTab('lc');       // new email — show inbox
+  else if(step>=2) mobileTab('mc');   // investigation — show tool
+  // Alert dot: inbox needs attention at step 1
+  mobileNavAlert('lc', step===1);
+  mobileNavAlert('mc', step>=2 && step<=4);
+}
+
+// Alert dot on nav when something needs attention
+function mobileNavAlert(col, on){
+  const btn=document.querySelector(`.bnav-btn[data-col="${col}"]`);
+  if(btn)btn.classList.toggle('alert', on);
+}
+
+// Initialise — show inbox by default on mobile
+(function(){
+  if(window.innerWidth < 480){
+    document.getElementById('lc').classList.add('m-show');
+  }
+})();
+</script>
 </body>
 </html>
