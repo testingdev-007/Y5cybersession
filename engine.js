@@ -1,9 +1,11 @@
 /* ════════════════════════════════════════════════════════════
    CYBERSHIELD ACADEMY
-   FILE:    engine_2026-06-10_v36.js
+   FILE:    engine_2026-06-10_v38.js
    ROLE:    Game engine — rendering, state, timers, IP trace, plenary, modals
    ────────────────────────────────────────────────────────────
    VERSION HISTORY
+   v38     2026-06-22  offerHelp steps 3-4 now delegate to module-specific onStuck pool; generic hints only for steps 1-2 or if no pool exists
+   v37     2026-06-22  offerHelp hints 3+4 made module-neutral (removed DDoS-specific "big spike" language)
    v36     2026-06-22  showIPRetryModal replaced with in-overlay #ipRetryPanel toggle — eliminates z-index/touch issues on iOS Safari entirely
    v35     2026-06-22  showIPRetryModal rebuilt with createElement (Safari hang fix); both RAF loops cancelled on wrong IP answer
    v34     2026-06-22  handleHopAnswer: cancel TRACER.animId on wrong answer; retryIPTrace restarts drawTacticalMapIdle
@@ -260,11 +262,24 @@ function clearGlows(){
   });
 }
 function offerHelp(step){
-  const hints={
+  // Steps 3-4 = cards being investigated. Always prefer module-specific onStuck
+  // hints over generic ones — they're contextually accurate for that module.
+  // Generic hints are a last resort only when no module context exists.
+  if(step>=3&&GS.modId){
+    var pool=(MODULE_GROUP_CHAT[GS.modId]||{}).onStuck;
+    if(pool&&pool.length){
+      var e=pool[Math.min(GS.stuckCount||0,pool.length-1)];
+      gcMsg(e.persona,pick(e.msgs));
+      GS.stuckCount=(GS.stuckCount||0)+1;
+      return;
+    }
+  }
+  // Steps 1-2 (no module loaded yet) or fallback if module has no onStuck pool
+  var hints={
     1:["Can you see your email? Click it, then press OPEN IT to read it!","Click the email in the list on the left — then press the OPEN IT button!"],
     2:["Now pick a tool from the dropdown above the data area and click LOAD TOOL. Look at your email — what kind of attack is it?","Hint: your email tells you the type of attack. Pick the tool that matches!"],
-    3:["Look at each card — what do the numbers tell you? Click the buttons to decide what to do!","Check each item. Big spike = Red, a bit high = Amber, looks normal = Green."],
-    4:["Click the action buttons on each card. You're nearly done!","For each card, pick Block, Quarantine, or Ignore based on how serious it looks."],
+    3:["Look at each card carefully — what is it telling you? Is it dangerous, worth investigating, or totally normal?","For each card: 🔴 = danger (act now), 🟡 = suspicious (investigate), 🟢 = normal (leave it). Click the matching button!"],
+    4:["Click the action buttons on each card — you're nearly done!","Each card has action buttons. Pick the one that matches what you'd do: treat it as a threat, investigate it, or leave it alone."],
   };
   gcMsg(pick(['zara','marcus','priya']),pick(hints[step]||hints[2]));
 }
