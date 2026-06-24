@@ -1,7 +1,15 @@
 /* ════════════════════════════════════════════════════════════
    CYBERSHIELD ACADEMY
-   FILE: modules_2026-06-10_v11.js
-   ROLE: modules.js
+   FILE:    modules_2026-06-10_v16.js
+   ROLE:    All 7 attack modules — scenario generation, quiz, plenary, column definitions
+   ────────────────────────────────────────────────────────────
+   VERSION HISTORY
+   v16     2026-06-22  Ransomware AMBER: changed extensions to genuinely ambiguous ones (.enc/.bkup/.protect/.safe) and improved note; BruteForce AMBER: removed "like a robot" (contradicted investigate action); Malware AMBER: note now explains why investigate not quarantine
+   v15     2026-06-22  notes removed from MODULE_COLUMNS.ddos (was always-visible answer leak); stray duplicate MODULE_LIST.push for socialEng and usbDrop removed
+   v14     2026-06-22  USB summary/realWorld rewritten to explain labelling-trick psychology; autorun Q updated for accuracy
+   v13     2026-06-22  BruteForce GREEN data corrected: attempts 1–6 (was 0–7), sourceIPs 3–15 (was 3–40); improved GREEN card notes; Ransomware Q6/Q9 distractors improved; BruteForce RAG rule text updated
+   v12     2026-06-22  All top-level const/let converted to var (Safari); quiz wrong-answer distractors improved across multiple modules
+   v11     2026-06-10  socialEng and usbDrop modules added; MODULE_LIST set to exactly 7 unique entries
    ════════════════════════════════════════════════════════════ */
 // ============================================================
 // MODULES.JS — CyberShield Academy Simulation Modules
@@ -147,7 +155,7 @@ MODULES.malware = {
     const items=[];
     for(let i=0;i<numItems;i++){
       if(rp[i]==='R'){const nm=pick(malNames);const cpu=randFloat(40,95,1);items.push({name:nm,purpose:'Not a known Windows program',cpu,memMB:randInt(400,1400),networkKBs:randInt(500,5000),ragAnswer:'R',actionAnswer:'quarantine',notes:'Not recognised in the standard program list.',handled:false,userRag:null,userAction:null});}
-      else if(rp[i]==='A'){const p=pick(legit);const cpu=randFloat(72,90,1);items.push({name:p.name,purpose:p.purpose,cpu,memMB:Math.round(jitter(p.memBase,0.15)),networkKBs:randInt(80,300),ragAnswer:'A',actionAnswer:'investigate',notes:`Real program but CPU is quite high right now (${cpu.toFixed(1)}%).`,handled:false,userRag:null,userAction:null});}
+      else if(rp[i]==='A'){const p=pick(legit);const cpu=randFloat(72,90,1);items.push({name:p.name,purpose:p.purpose,cpu,memMB:Math.round(jitter(p.memBase,0.15)),networkKBs:randInt(80,300),ragAnswer:'A',actionAnswer:'investigate',notes:`Known program, but CPU this high is unusual — could be a legitimate scan or update, or could mean the process is compromised. Investigate before quarantining.`,handled:false,userRag:null,userAction:null});}
       else if(i===edgeAt){const cpu=randFloat(48,66,1);items.push({name:'WinUpdate.exe',purpose:'Windows Update',cpu,memMB:randInt(400,700),networkKBs:randInt(10,80),ragAnswer:'G',actionAnswer:'ignore',notes:'Windows Update.',handled:false,userRag:null,userAction:null});}
       else{const p=pick(legit);items.push({name:p.name,purpose:p.purpose,cpu:parseFloat(jitter(p.cpuBase,0.2).toFixed(1)),memMB:Math.round(jitter(p.memBase,0.12)),networkKBs:randInt(0,50),ragAnswer:'G',actionAnswer:'ignore',notes:'Known Windows program.',handled:false,userRag:null,userAction:null});}
     }
@@ -295,7 +303,7 @@ MODULES.ransomware = {
     return chosen.map((d,i)=>{
       const total=randInt(1200,45000);
       if(rp[i]==='R'){const pct=randFloat(28,80)/100;const enc=Math.round(total*pct);const ext=pick(['.locked','.encrypted','.WNCRY','.cerber','.crypted']);return {name:d.name,purpose:d.purpose,totalFiles:total,encryptedFiles:enc,newExtensions:ext,writeOpsMin:randInt(2000,8000),ragAnswer:'R',actionAnswer:'isolate',notes:`${Math.round(pct*100)}% of files encrypted. Extension: "${ext}".`,handled:false,userRag:null,userAction:null};}
-      else if(rp[i]==='A'){const enc=Math.round(total*randFloat(0.5,4)/100);const ext=pick(['.locked','.encrypted','.WNCRY','.zepto']);return {name:d.name,purpose:d.purpose,totalFiles:total,encryptedFiles:enc,newExtensions:ext,writeOpsMin:randInt(300,900),ragAnswer:'A',actionAnswer:'investigate',notes:`${enc.toLocaleString()} files now have a "${ext}" extension.`,handled:false,userRag:null,userAction:null};}
+      else if(rp[i]==='A'){const enc=Math.round(total*randFloat(0.5,4)/100);const ext=pick(['.enc','.bkup','.protect','.safe']);return {name:d.name,purpose:d.purpose,totalFiles:total,encryptedFiles:enc,newExtensions:ext,writeOpsMin:randInt(300,900),ragAnswer:'A',actionAnswer:'investigate',notes:`${enc.toLocaleString()} files now have a "${ext}" extension — some legitimate backup or encryption tools use this too. Investigate before isolating.`,handled:false,userRag:null,userAction:null};}
       else if(i===edgeAt){return {name:d.name,purpose:d.purpose,totalFiles:total,encryptedFiles:Math.round(total*randFloat(0.1,0.3)/100),newExtensions:'.bak',writeOpsMin:randInt(600,3500),ragAnswer:'G',actionAnswer:'ignore',notes:'Extension: .bak — this is just a backup file. Normal for a backup drive!',handled:false,userRag:null,userAction:null};}
       else{return {name:d.name,purpose:d.purpose,totalFiles:total,encryptedFiles:Math.round(total*randFloat(0.1,1)/100),newExtensions:'None',writeOpsMin:randInt(5,55),ragAnswer:'G',actionAnswer:'ignore',notes:'',handled:false,userRag:null,userAction:null};}
     });
@@ -922,7 +930,7 @@ MODULES.bruteForce = {
     const edgeAt=includeEdgeCase?numEscalations:-1;
     return chosen.map((acc,i)=>{
       if(rp[i]==='R'){const att=randInt(300,2000);const ips=randInt(1,2);const intv=randInt(20,150);return {name:acc.name,purpose:acc.purpose,attemptsPerMin:att,sourceIPs:ips,intervalMs:`~${intv}ms`,ragAnswer:'R',actionAnswer:'lockAccount',notes:`${att.toLocaleString()}/min from ${ips===1?'1 computer':ips+' computers'}, every ~${intv}ms.`,handled:false,userRag:null,userAction:null};}
-      else if(rp[i]==='A'){const att=randInt(60,299);const ips=randInt(2,6);const intv=randInt(150,450);return {name:acc.name,purpose:acc.purpose,attemptsPerMin:att,sourceIPs:ips,intervalMs:`~${intv}ms`,ragAnswer:'A',actionAnswer:'investigate',notes:`${att}/min from ${ips} computers — attempts are fast and evenly spaced, like a robot.`,handled:false,userRag:null,userAction:null};}
+      else if(rp[i]==='A'){const att=randInt(60,299);const ips=randInt(2,6);const intv=randInt(150,450);return {name:acc.name,purpose:acc.purpose,attemptsPerMin:att,sourceIPs:ips,intervalMs:`~${intv}ms`,ragAnswer:'A',actionAnswer:'investigate',notes:`${att}/min from ${ips} computers with unusually regular timing — suspicious, but below the threshold for a confirmed automated attack. Needs investigation.`,handled:false,userRag:null,userAction:null};}
       else if(i===edgeAt){const att=randInt(150,500);const intv=randInt(30,120);return {name:acc.name,purpose:acc.purpose,attemptsPerMin:att,sourceIPs:1,intervalMs:`~${intv}ms`,ragAnswer:'R',actionAnswer:'lockAccount',notes:'Account locked after loads of fast attempts — then a successful login! The attacker may have cracked the password. ⚠️',handled:false,userRag:null,userAction:null};}
       else{const att=randInt(1,6);const ips=randInt(3,15);return {name:acc.name,purpose:acc.purpose,attemptsPerMin:att,sourceIPs:ips,intervalMs:'Varied',ragAnswer:'G',actionAnswer:'ignore',notes:`Only ${att}/min spread across ${ips} devices — that's less than 1 wrong attempt per device. Just normal humans mistyping. Real bot attacks use 300+/min from 1-2 computers.`,handled:false,userRag:null,userAction:null};}
     });
